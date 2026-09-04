@@ -1,0 +1,21 @@
+schema: spec-driven
+
+context: |
+  O Fera usa PostgreSQL e Auth gerenciados pelo Supabase. O projeto remoto do
+  Supabase é o único ambiente operacional para schema, Auth, RLS, funções,
+  views, Edge Functions, segredos e dados.
+
+  Toda consulta, criação, alteração, implantação e validação desses recursos
+  deve usar exclusivamente o MCP Supabase conectado ao projeto correto. Nunca
+  substituir o MCP por Supabase CLI, Docker, banco local, scripts de
+  provisionamento, seeds, migrations locais ou arquivos locais de Edge Function.
+  Se o MCP Supabase não estiver disponível, interromper a operação remota e
+  reportar o bloqueio. `banco.sql` é somente a referência declarativa
+  versionada do estado esperado; não é mecanismo de deploy.
+
+operations:
+  apply:
+    guidance:
+      - Confirmar que o MCP Supabase está conectado ao projeto remoto correto antes de qualquer alteração.
+      - Criar, alterar, implantar e validar recursos do Supabase somente pelo MCP Supabase.
+      - Não criar ambiente ou artefatos locais do Supabase; se o MCP não estiver disponível, reportar o bloqueio sem alternativa local.

@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --color-navy: #2E3A5C;
+    --color-navy-deep: #232C47;
+    --color-steel: #5A6B94;
+    --color-steel-light: #9DA9C6;
+    --color-acao: #4C8DFF;
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Tema único escuro navy — o app é interno e a identidade do logo é escura.
+   Os valores vivem em :root sem bloco .dark: não há alternância de tema. */
+:root {
+    --background: oklch(0.231 0.036 271.5);
+    --foreground: oklch(0.946 0.012 267);
+    --card: oklch(0.322 0.054 268.8);
+    --card-foreground: oklch(0.946 0.012 267);
+    --popover: oklch(0.298 0.051 269.2);
+    --popover-foreground: oklch(0.946 0.012 267);
+    --primary: oklch(0.658 0.182 260.7);
+    --primary-foreground: oklch(0.985 0.005 267);
+    --secondary: oklch(0.354 0.062 268.4);
+    --secondary-foreground: oklch(0.946 0.012 267);
+    --muted: oklch(0.298 0.051 269.2);
+    --muted-foreground: oklch(0.735 0.044 267.5);
+    --accent: oklch(0.354 0.062 268.4);
+    --accent-foreground: oklch(0.985 0.005 267);
+    --destructive: oklch(0.63 0.2 25);
+    --border: oklch(1 0 0 / 12%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.658 0.182 260.7);
+    --chart-1: oklch(0.658 0.182 260.7);
+    --chart-2: oklch(0.72 0.13 200);
+    --chart-3: oklch(0.75 0.14 145);
+    --chart-4: oklch(0.8 0.14 85);
+    --chart-5: oklch(0.7 0.19 20);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.354 0.062 268.4);
+    --sidebar-foreground: oklch(0.946 0.012 267);
+    --sidebar-primary: oklch(0.658 0.182 260.7);
+    --sidebar-primary-foreground: oklch(0.985 0.005 267);
+    --sidebar-accent: oklch(0.42 0.07 268);
+    --sidebar-accent-foreground: oklch(0.985 0.005 267);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.658 0.182 260.7);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* Rótulos de seção em caixa alta com espaçamento largo,
+   ecoando o subtítulo do logotipo Fera. */
+@utility label-caixa {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--color-steel-light);
+}
