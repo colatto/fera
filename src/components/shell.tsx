@@ -121,7 +121,7 @@ export function Shell() {
           </Button>
         </div>
       </aside>
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
+      <main className="min-h-0 min-w-0 flex-1 bg-navy-deep px-4 py-6 md:px-8">
         <Outlet />
       </main>
     </div>

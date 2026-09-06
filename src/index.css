@@ -56,7 +56,7 @@
 /* Tema único escuro navy — o app é interno e a identidade do logo é escura.
    Os valores vivem em :root sem bloco .dark: não há alternância de tema. */
 :root {
-    --background: oklch(0.231 0.036 271.5);
+    --background: oklch(0.363 0.079 264.8);
     --foreground: oklch(0.946 0.012 267);
     --card: oklch(0.322 0.054 268.8);
     --card-foreground: oklch(0.946 0.012 267);
@@ -80,7 +80,7 @@
     --chart-4: oklch(0.8 0.14 85);
     --chart-5: oklch(0.7 0.19 20);
     --radius: 0.625rem;
-    --sidebar: oklch(0.354 0.062 268.4);
+    --sidebar: oklch(0.363 0.079 264.8);
     --sidebar-foreground: oklch(0.946 0.012 267);
     --sidebar-primary: oklch(0.658 0.182 260.7);
     --sidebar-primary-foreground: oklch(0.985 0.005 267);
