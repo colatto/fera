@@ -62,7 +62,7 @@
 ## 8. Deploy na Vercel — design D8
 
 - [x] 8.1 Validar `vite build` localmente e o comportamento de refresh direto em rotas internas (`vercel dev` ou preview)
-- [ ] 8.2 Inicializar o repositório Git, commit inicial e push para o GitHub
-- [ ] 8.3 Importar o repositório na Vercel, configurar as variáveis `VITE_SUPABASE_*` e publicar
-- [ ] 8.4 Verificar o app publicado com as credenciais de teste `AUTH_ADM_*`/`AUTH_OPER_*` (login, navegação por perfil, logout)
-- [ ] 8.5 Quando o domínio de produção for definido, ajustar Site URL/redirects do Auth no projeto remoto exclusivamente pelo MCP Supabase
+- [x] 8.2 Inicializar o repositório Git, commit inicial e push para o GitHub
+- [x] 8.3 Importar o repositório na Vercel, configurar as variáveis `VITE_SUPABASE_*` e publicar
+- [x] 8.4 Verificar o app publicado com as credenciais de teste `AUTH_ADM_*`/`AUTH_OPER_*` (login, navegação por perfil, logout)
+- [x] 8.5 Quando o domínio de produção for definido, ajustar Site URL/redirects do Auth no projeto remoto exclusivamente pelo MCP Supabase
