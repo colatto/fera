@@ -8,7 +8,7 @@
 ## 2. Wrapper do frontend
 
 - [x] 2.1 Em `src/lib/adminUsuarios.ts`, trocar a mensagem do ramo `status: 0` de `chamarAdminUsuarios` pela mensagem fixa de falha de comunicação (D5), mantendo `status: 0` como marcador
-- [ ] 2.2 Publicar o frontend no Vercel para entregar a mensagem da D5 aos usuários de `https://fera.ruatrez.com` (independente e retrocompatível com o deploy da função)
+- [x] 2.2 Publicar o frontend no Vercel para entregar a mensagem da D5 aos usuários de `https://fera.ruatrez.com` (independente e retrocompatível com o deploy da função)
 
 ## 3. Validação de endpoint
 
@@ -17,6 +17,6 @@
 
 ## 4. Validação no navegador (produção, `https://fera.ruatrez.com`)
 
-- [ ] 4.1 Como ADM, exercitar no sistema criar, alterar, inativar, reativar e redefinir senha usando usuário de teste descartável — todas operam sem erro de transporte
-- [ ] 4.2 Criar usuário com e-mail duplicado exibe a mensagem de conflito da função (spec: erro legível pelo navegador)
-- [ ] 4.3 Com a rede bloqueada (DevTools offline), uma ação exibe a mensagem amigável de falha de comunicação, sem mensagem crua do SDK
+- [x] 4.1 Como ADM, exercitar no sistema criar, alterar, inativar, reativar e redefinir senha usando usuário de teste descartável — todas operam sem erro de transporte
+- [x] 4.2 Criar usuário com e-mail duplicado exibe a mensagem de conflito da função (spec: erro legível pelo navegador)
+- [x] 4.3 Com a rede bloqueada (DevTools offline), uma ação exibe a mensagem amigável de falha de comunicação, sem mensagem crua do SDK
