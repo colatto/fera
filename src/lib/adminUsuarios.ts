@@ -27,7 +27,12 @@ async function chamarAdminUsuarios<T>(corpo: Record<string, unknown>): Promise<T
         mensagem: `Falha na operação (HTTP ${error.context.status}).`,
       } satisfies ErroFuncao
     }
-    throw { status: 0, mensagem: error.message } satisfies ErroFuncao
+    // status 0 marca falha de transporte (FunctionsFetchError, rede ou CORS):
+    // mensagem fixa amigável, sem expor o texto bruto do SDK (design D5).
+    throw {
+      status: 0,
+      mensagem: "Falha de comunicação com o servidor. Verifique sua conexão e tente novamente.",
+    } satisfies ErroFuncao
   }
   return data as T
 }
