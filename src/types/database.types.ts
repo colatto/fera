@@ -560,7 +560,6 @@ export type Database = {
           faixa_final?: number | null
           faixa_inicial: number
           id?: never
-          is_ppi?: boolean
           limite_parcelas?: number
           nome: string
           // Preenchido pelo trigger fn_proximo_automatico (nasce = faixa_inicial).
@@ -574,7 +573,6 @@ export type Database = {
           faixa_final?: number | null
           faixa_inicial?: number
           id?: never
-          is_ppi?: boolean
           limite_parcelas?: number
           nome?: string
           proximo_numero?: number

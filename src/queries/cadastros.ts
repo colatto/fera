@@ -73,7 +73,6 @@ export async function alterarSituacaoOperadora(id: number, ativo: boolean): Prom
 
 export interface ValoresTipoProjeto {
   nome: string
-  is_ppi: boolean
   faixa_inicial: number
   faixa_final: number | null
   limite_parcelas: number

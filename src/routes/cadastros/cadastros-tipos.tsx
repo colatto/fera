@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -43,12 +42,14 @@ import {
 } from "@/queries/cadastros"
 
 // Regras locais do formulário (spec cadastros-basicos), espelhando as constraints
-// do banco: faixa inclusiva/limite de parcelas/PPI e Torre com limite entre 1 e 3
-// parcelas. O próximo número é mantido pelo banco (nasce = faixa inicial, só cresce).
+// do banco: faixa inclusiva/limite de parcelas/PPI (derivado do nome) e Torre com
+// limite entre 1 e 3 parcelas. O próximo número é mantido pelo banco (nasce =
+// faixa inicial, só cresce).
+const ehNomePpi = (nome: string) => nome.trim().toLowerCase() === "ppi"
+
 function validarTipo(valores: ValoresTipoProjeto): string | null {
   if (!valores.nome.trim()) return "Informe o nome do tipo."
-  const nome = valores.nome.trim()
-  if (valores.is_ppi) {
+  if (ehNomePpi(valores.nome)) {
     if (valores.faixa_inicial < 1001) return "Tipo PPI: a faixa inicial deve ser 1001 ou maior."
     if (valores.faixa_final !== null && valores.faixa_final < valores.faixa_inicial)
       return "A faixa final deve ser maior ou igual à inicial."
@@ -61,7 +62,7 @@ function validarTipo(valores: ValoresTipoProjeto): string | null {
       return "A faixa final deve ser maior ou igual à inicial."
   }
   if (valores.limite_parcelas < 1) return "O limite de parcelas deve ser no mínimo 1."
-  if (nome.toLowerCase() === "torre" && (valores.limite_parcelas > 3 || valores.limite_parcelas < 1))
+  if (valores.nome.trim().toLowerCase() === "torre" && (valores.limite_parcelas > 3 || valores.limite_parcelas < 1))
     return "O tipo Torre deve ter limite de parcelas entre 1 e 3."
   return null
 }
@@ -78,7 +79,6 @@ function DialogTipo({
   const queryClient = useQueryClient()
   const [valores, setValores] = useState<ValoresTipoProjeto>({
     nome: edicao?.nome ?? "",
-    is_ppi: edicao?.is_ppi ?? false,
     faixa_inicial: edicao?.faixa_inicial ?? 0,
     faixa_final: edicao?.faixa_final ?? 1000,
     limite_parcelas: edicao?.limite_parcelas ?? 1,
@@ -115,8 +115,9 @@ function DialogTipo({
         <DialogHeader>
           <DialogTitle>{edicao ? "Editar tipo de projeto" : "Novo tipo de projeto"}</DialogTitle>
           <DialogDescription>
-            Faixas de numeração não podem se sobrepor. PPI começa em 1001; não PPI fica em 0–1000.
-            O tipo Torre exige limite de parcelas entre 1 e 3.
+            Faixas de numeração não podem se sobrepor. Tipos chamados PPI usam faixa a partir de
+            1001 (final opcional); os demais ficam em 0–1000. O tipo Torre exige limite de
+            parcelas entre 1 e 3.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -125,18 +126,18 @@ function DialogTipo({
             <Input
               id="tipo-nome"
               value={valores.nome}
-              onChange={(e) => mudar("nome", e.target.value)}
+              onChange={(e) => {
+                const nome = e.target.value
+                setValores((atual) => {
+                  // Borda de subida (não PPI → PPI): aplica os padrões canônicos
+                  // de PPI. A transição inversa não restaura valores; a validação
+                  // local bloqueia faixas inconsistentes com o novo nome.
+                  if (!ehNomePpi(atual.nome) && ehNomePpi(nome))
+                    return { ...atual, nome, faixa_inicial: 1001, faixa_final: null }
+                  return { ...atual, nome }
+                })
+              }}
             />
-          </div>
-          <div className="col-span-2 flex items-center gap-3">
-            <Switch
-              id="tipo-ppi"
-              checked={valores.is_ppi}
-              onCheckedChange={(marcado) => mudar("is_ppi", marcado)}
-            />
-            <Label htmlFor="tipo-ppi" className="text-muted-foreground">
-              Tipo PPI (faixa a partir de 1001, sem final obrigatório)
-            </Label>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tipo-inicial">Faixa inicial</Label>
@@ -148,7 +149,9 @@ function DialogTipo({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tipo-final">Faixa final {valores.is_ppi ? "(opcional)" : ""}</Label>
+            <Label htmlFor="tipo-final">
+              Faixa final {ehNomePpi(valores.nome) ? "(opcional)" : ""}
+            </Label>
             <Input
               id="tipo-final"
               type="number"
@@ -259,7 +262,6 @@ export function TiposProjeto() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Nome</TableHead>
-                  <TableHead>PPI</TableHead>
                   <TableHead>Faixa</TableHead>
                   <TableHead>Próximo nº</TableHead>
                   <TableHead>Parcelas</TableHead>
@@ -271,7 +273,6 @@ export function TiposProjeto() {
                 {(consulta.data ?? []).map((tipo) => (
                   <TableRow key={tipo.id}>
                     <TableCell className="font-medium">{tipo.nome}</TableCell>
-                    <TableCell>{tipo.is_ppi ? "Sim" : "Não"}</TableCell>
                     <TableCell className="font-mono text-xs">{rotuloFaixa(tipo)}</TableCell>
                     <TableCell>{tipo.proximo_numero}</TableCell>
                     <TableCell>{tipo.limite_parcelas}</TableCell>

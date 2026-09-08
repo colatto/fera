@@ -71,8 +71,10 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
     semValor: "A faixa de números sobrepõe a faixa de outro tipo de projeto.",
   },
   tipo_faixa_valida: {
-    comValor: "Faixa inconsistente com o indicador PPI: tipos comuns usam 0–1000; PPI, a partir de 1001.",
-    semValor: "Faixa inconsistente com o indicador PPI: tipos comuns usam 0–1000; PPI, a partir de 1001.",
+    comValor:
+      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 1001 (final opcional); os demais, 0–1000 com faixa final obrigatória.",
+    semValor:
+      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 1001 (final opcional); os demais, 0–1000 com faixa final obrigatória.",
   },
   tipo_proximo_valido: {
     comValor: "O próximo número deve estar dentro da faixa definida.",

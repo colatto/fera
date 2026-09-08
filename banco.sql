@@ -24,7 +24,8 @@ create table public.operadora (
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now()
 );
 create table public.tipo_projeto (
-  id bigint generated always as identity primary key, nome varchar(100) not null unique, is_ppi boolean not null default false,
+  id bigint generated always as identity primary key, nome varchar(100) not null unique,
+  is_ppi boolean generated always as (lower(nome) = 'ppi') stored,
   faixa_inicial integer not null, faixa_final integer,
   faixa int4range generated always as (int4range(faixa_inicial, case when faixa_final is null then null else faixa_final + 1 end, '[)')) stored,
   proximo_numero integer not null, limite_parcelas smallint not null default 1 check (limite_parcelas > 0), ativo boolean not null default true,
