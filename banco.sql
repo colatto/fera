@@ -31,7 +31,7 @@ create table public.tipo_projeto (
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
   constraint tipo_faixa_valida check ((not is_ppi and faixa_inicial between 0 and 1000 and faixa_final between faixa_inicial and 1000) or (is_ppi and faixa_inicial >= 1001 and (faixa_final is null or faixa_final >= faixa_inicial))),
   constraint tipo_proximo_valido check (proximo_numero >= faixa_inicial and (faixa_final is null or proximo_numero <= faixa_final + 1)),
-  constraint tipo_torre_limite_parcelas check (lower(nome) <> 'torre' or limite_parcelas = 3),
+  constraint tipo_torre_limite_parcelas check (lower(nome) <> 'torre' or limite_parcelas between 1 and 3),
   constraint tipo_faixas_sem_sobreposicao exclude using gist (faixa with &&)
 );
 create table public.ordem_compra (

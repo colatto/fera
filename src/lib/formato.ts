@@ -79,8 +79,8 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
     semValor: "O próximo número deve estar dentro da faixa definida.",
   },
   tipo_torre_limite_parcelas: {
-    comValor: "O tipo Torre exige limite de parcelas igual a 3.",
-    semValor: "O tipo Torre exige limite de parcelas igual a 3.",
+    comValor: "O tipo Torre exige limite de parcelas entre 1 e 3.",
+    semValor: "O tipo Torre exige limite de parcelas entre 1 e 3.",
   },
 }
 

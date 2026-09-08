@@ -48,7 +48,7 @@ Os nomes físicos são `snake_case`. Entidades de negócio usam `bigint generate
 
 - `usuario`: `id`, `perfil`, `nome`, `email`, `ativo` e auditoria. Senhas pertencem exclusivamente ao Supabase Auth.
 - `cliente`, `operadora` e `tipo_projeto`: cadastros inativáveis. CNPJ é opcional, somente dígitos e único quando presente. Operadora e tipo possuem nome único. Cadastros inativos não podem ser selecionados para novos projetos e só ADM os visualiza diretamente para manutenção.
-- `tipo_projeto`: possui faixa inclusiva, próximo número, limite de parcelas e `is_ppi`. Faixas não PPI ficam em `0–1000`; PPI começa em `1001`; exclusão GiST impede sobreposição. O tipo cujo nome seja `Torre` deve possuir `limite_parcelas = 3`.
+- `tipo_projeto`: possui faixa inclusiva, próximo número, limite de parcelas e `is_ppi`. Faixas não PPI ficam em `0–1000`; PPI começa em `1001`; exclusão GiST impede sobreposição. O tipo cujo nome seja `Torre` deve possuir `limite_parcelas` entre 1 e 3.
 - `projeto`: número global único, ano, código único, cliente, operadora, identificadores, localização, responsável, status, OC opcional, compatibilização auditada, predecessor opcional e criador obrigatório. O predecessor deve estar cancelado e só pode ter um sucessor.
 - `nota_fiscal`: pertence a exatamente um projeto, tem valor positivo e é a fonte financeira oficial. Previsão é calculada como `data_emissao + 30 dias`, sem persistência.
 - `recebimento`: pertence a uma nota, tem data/valor positivo, respeita limite de parcelas e nunca ultrapassa a nota.

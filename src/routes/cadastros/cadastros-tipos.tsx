@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import {
   Table,
@@ -36,8 +43,8 @@ import {
 } from "@/queries/cadastros"
 
 // Regras locais do formulário (spec cadastros-basicos), espelhando as constraints
-// do banco: faixa inclusiva/limite de parcelas/PPI e Torre=3 parcelas. O próximo
-// número é mantido pelo banco (nasce = faixa inicial, só cresce).
+// do banco: faixa inclusiva/limite de parcelas/PPI e Torre com limite entre 1 e 3
+// parcelas. O próximo número é mantido pelo banco (nasce = faixa inicial, só cresce).
 function validarTipo(valores: ValoresTipoProjeto): string | null {
   if (!valores.nome.trim()) return "Informe o nome do tipo."
   const nome = valores.nome.trim()
@@ -54,8 +61,8 @@ function validarTipo(valores: ValoresTipoProjeto): string | null {
       return "A faixa final deve ser maior ou igual à inicial."
   }
   if (valores.limite_parcelas < 1) return "O limite de parcelas deve ser no mínimo 1."
-  if (nome.toLowerCase() === "torre" && valores.limite_parcelas !== 3)
-    return "O tipo Torre deve ter limite de parcelas igual a 3."
+  if (nome.toLowerCase() === "torre" && (valores.limite_parcelas > 3 || valores.limite_parcelas < 1))
+    return "O tipo Torre deve ter limite de parcelas entre 1 e 3."
   return null
 }
 
@@ -109,7 +116,7 @@ function DialogTipo({
           <DialogTitle>{edicao ? "Editar tipo de projeto" : "Novo tipo de projeto"}</DialogTitle>
           <DialogDescription>
             Faixas de numeração não podem se sobrepor. PPI começa em 1001; não PPI fica em 0–1000.
-            O tipo Torre exige limite de 3 parcelas.
+            O tipo Torre exige limite de parcelas entre 1 e 3.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -153,13 +160,32 @@ function DialogTipo({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tipo-parcelas">Limite de parcelas</Label>
-            <Input
-              id="tipo-parcelas"
-              type="number"
-              min={1}
-              value={valores.limite_parcelas}
-              onChange={(e) => mudar("limite_parcelas", Number(e.target.value))}
-            />
+            {valores.nome.trim().toLowerCase() === "torre" ? (
+              // Torre: select restrito a 1–3 (espelha a constraint do banco). Sem
+              // reset de valor: se o valor atual está fora da faixa (ex.: rename
+              // para Torre com 5), o select fica sem opção e a validação bloqueia.
+              <Select
+                value={String(valores.limite_parcelas)}
+                onValueChange={(v) => mudar("limite_parcelas", Number(v))}
+              >
+                <SelectTrigger id="tipo-parcelas">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="tipo-parcelas"
+                type="number"
+                min={1}
+                value={valores.limite_parcelas}
+                onChange={(e) => mudar("limite_parcelas", Number(e.target.value))}
+              />
+            )}
           </div>
         </div>
         {erroLocal ? <p className="text-sm text-destructive">{erroLocal}</p> : null}
