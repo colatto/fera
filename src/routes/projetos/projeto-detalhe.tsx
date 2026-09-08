@@ -720,9 +720,14 @@ export function ProjetoDetalhe() {
         {!cancelado ? (
           <div className="flex flex-wrap gap-2">
             {status === "CADASTRADO" ? (
-              <Button size="sm" disabled={mutacaoEnviar.isPending} onClick={() => void enviar()}>
-                Enviar projeto
-              </Button>
+              <>
+                <Button size="sm" disabled={mutacaoEnviar.isPending} onClick={() => void enviar()}>
+                  Enviar projeto
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => setCancelando(true)}>
+                  Cancelar projeto
+                </Button>
+              </>
             ) : null}
             {ehAdm && status === "ENVIADO" ? (
               <Button size="sm" variant="secondary" onClick={() => setOcAberta(true)}>
@@ -754,9 +759,6 @@ export function ProjetoDetalhe() {
                 </Button>
               </>
             ) : null}
-            <Button size="sm" variant="destructive" onClick={() => setCancelando(true)}>
-              Cancelar projeto
-            </Button>
           </div>
         ) : (
           <Badge variant="outline" className={CORES_STATUS.CANCELADO}>
