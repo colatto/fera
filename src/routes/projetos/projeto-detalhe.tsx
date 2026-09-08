@@ -305,7 +305,7 @@ function DialogOrdemCompra({
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 flex flex-col gap-1.5">
-              <Label htmlFor="oc-numero">Número</Label>
+              <Label htmlFor="oc-numero">Código</Label>
               <Input id="oc-numero" value={numero} onChange={(e) => setNumero(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1.5">

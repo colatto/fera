@@ -37,7 +37,8 @@ create table public.tipo_projeto (
 );
 create table public.ordem_compra (
   id bigint generated always as identity primary key, numero varchar(100) not null, data_oc date not null, centro_custo varchar(100),
-  registrado_por uuid not null references public.usuario(id) on delete restrict, registrado_em timestamptz not null default now(), atualizado_em timestamptz not null default now()
+  registrado_por uuid not null references public.usuario(id) on delete restrict, registrado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
+  constraint ordem_compra_numero_normalizada check (numero = btrim(numero)), constraint ordem_compra_numero_unico unique (numero)
 );
 create table public.projeto (
   id bigint generated always as identity primary key, numero integer not null unique check (numero >= 0), ano smallint not null check (ano between 2000 and 9999),

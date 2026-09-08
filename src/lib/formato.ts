@@ -84,6 +84,14 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
     comValor: "O tipo Torre exige limite de parcelas entre 1 e 3.",
     semValor: "O tipo Torre exige limite de parcelas entre 1 e 3.",
   },
+  ordem_compra_numero_unico: {
+    comValor: "Já existe uma ordem de compra com o número X.",
+    semValor: "Já existe uma ordem de compra com este número.",
+  },
+  ordem_compra_numero_normalizada: {
+    comValor: "O número da ordem de compra não pode começar ou terminar com espaços.",
+    semValor: "O número da ordem de compra não pode começar ou terminar com espaços.",
+  },
 }
 
 // Códigos Postgres traduzíveis: unique, exclusion e check (design D2).
