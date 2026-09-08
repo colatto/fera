@@ -563,7 +563,8 @@ export type Database = {
           is_ppi?: boolean
           limite_parcelas?: number
           nome: string
-          proximo_numero: number
+          // Preenchido pelo trigger fn_proximo_automatico (nasce = faixa_inicial).
+          proximo_numero?: number
         }
         Update: {
           ativo?: boolean

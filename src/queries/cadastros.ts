@@ -76,7 +76,6 @@ export interface ValoresTipoProjeto {
   is_ppi: boolean
   faixa_inicial: number
   faixa_final: number | null
-  proximo_numero: number
   limite_parcelas: number
 }
 

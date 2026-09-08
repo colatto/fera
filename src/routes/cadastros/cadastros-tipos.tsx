@@ -36,7 +36,8 @@ import {
 } from "@/queries/cadastros"
 
 // Regras locais do formulário (spec cadastros-basicos), espelhando as constraints
-// do banco: faixa inclusiva/próximo número/limite de parcelas/PPI e Torre=3 parcelas.
+// do banco: faixa inclusiva/limite de parcelas/PPI e Torre=3 parcelas. O próximo
+// número é mantido pelo banco (nasce = faixa inicial, só cresce).
 function validarTipo(valores: ValoresTipoProjeto): string | null {
   if (!valores.nome.trim()) return "Informe o nome do tipo."
   const nome = valores.nome.trim()
@@ -51,12 +52,6 @@ function validarTipo(valores: ValoresTipoProjeto): string | null {
       return "Tipo não PPI: a faixa final é obrigatória e deve ficar até 1000."
     if (valores.faixa_final < valores.faixa_inicial)
       return "A faixa final deve ser maior ou igual à inicial."
-  }
-  if (
-    valores.proximo_numero < valores.faixa_inicial ||
-    (valores.faixa_final !== null && valores.proximo_numero > valores.faixa_final + 1)
-  ) {
-    return "O próximo número deve ficar dentro da faixa (ou no limite + 1)."
   }
   if (valores.limite_parcelas < 1) return "O limite de parcelas deve ser no mínimo 1."
   if (nome.toLowerCase() === "torre" && valores.limite_parcelas !== 3)
@@ -79,7 +74,6 @@ function DialogTipo({
     is_ppi: edicao?.is_ppi ?? false,
     faixa_inicial: edicao?.faixa_inicial ?? 0,
     faixa_final: edicao?.faixa_final ?? 1000,
-    proximo_numero: edicao?.proximo_numero ?? 0,
     limite_parcelas: edicao?.limite_parcelas ?? 1,
   })
 
@@ -155,15 +149,6 @@ function DialogTipo({
               onChange={(e) =>
                 mudar("faixa_final", e.target.value === "" ? null : Number(e.target.value))
               }
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tipo-proximo">Próximo número</Label>
-            <Input
-              id="tipo-proximo"
-              type="number"
-              value={valores.proximo_numero}
-              onChange={(e) => mudar("proximo_numero", Number(e.target.value))}
             />
           </div>
           <div className="flex flex-col gap-1.5">

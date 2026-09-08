@@ -103,6 +103,24 @@ create trigger usuario_garante_adm before update on public.usuario for each row 
 create trigger cliente_atualizado before update on public.cliente for each row execute function public.fn_atualizar_timestamp();
 create trigger operadora_atualizado before update on public.operadora for each row execute function public.fn_atualizar_timestamp();
 create trigger tipo_atualizado before update on public.tipo_projeto for each row execute function public.fn_atualizar_timestamp();
+-- Próximo número do tipo de projeto é estado exclusivamente do sistema: INSERT nasce
+-- igual à faixa_inicial; UPDATE só cresce (guarda monotônica) e é elevado
+-- automaticamente quando a faixa_inicial sobe acima do contador corrente.
+create or replace function public.fn_proximo_automatico() returns trigger language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    new.proximo_numero := new.faixa_inicial;
+  else
+    if new.proximo_numero < old.proximo_numero then
+      raise exception 'O próximo número não pode ser reduzido manualmente';
+    end if;
+    if new.faixa_inicial > new.proximo_numero then
+      new.proximo_numero := new.faixa_inicial;
+    end if;
+  end if;
+  return new;
+end; $$;
+create trigger tipo_proximo_automatico before insert or update on public.tipo_projeto for each row execute function public.fn_proximo_automatico();
 create trigger oc_atualizada before update on public.ordem_compra for each row execute function public.fn_atualizar_timestamp();
 create trigger projeto_atualizado before update on public.projeto for each row execute function public.fn_atualizar_timestamp();
 create trigger nota_atualizada before update on public.nota_fiscal for each row execute function public.fn_atualizar_timestamp();

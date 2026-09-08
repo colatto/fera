@@ -1,0 +1,41 @@
+## ADDED Requirements
+
+### Requirement: Próximo número automático do tipo de projeto
+O próximo número de numeração de um tipo de projeto MUST ser estado mantido exclusivamente pelo sistema: ao criar um tipo, MUST nascer igual à faixa inicial; MUST ser incrementado somente pela criação de projetos; e, quando a faixa inicial de um tipo existente é elevada acima do contador corrente, o contador MUST ser ajustado automaticamente para cima até a nova faixa inicial, sem reutilizar números já emitidos. A interface de manutenção de tipos MUST NOT oferecer edição do próximo número e MUST exibi-lo somente como informação.
+
+#### Scenario: Criação de tipo inicializa o contador
+- **WHEN** o ADM cria um tipo de projeto com faixa inicial 1001 (PPI) e final opcional
+- **THEN** o tipo é salvo com próximo número igual a 1001, sem qualquer entrada do usuário para esse valor
+
+#### Scenario: Faixa inicial elevada acima do contador
+- **WHEN** o ADM edita um tipo cujo próximo número está em 300, elevando a faixa inicial para 500
+- **THEN** o próximo número passa a valer 500 automaticamente, sem reutilização dos números 300 a 499
+
+#### Scenario: Valor enviado pelo cliente é ignorado
+- **WHEN** uma requisição de criação de tipo envia um próximo número diferente da faixa inicial
+- **THEN** o banco grava o próximo número igual à faixa inicial
+
+#### Scenario: Próximo número somente leitura na interface
+- **WHEN** o ADM abre o formulário de criar ou editar tipo de projeto
+- **THEN** não existe campo editável de próximo número, e a listagem de tipos exibe o valor corrente como informação
+
+## MODIFIED Requirements
+
+### Requirement: Regras de formulário dos cadastros
+Os formulários MUST validar localmente o formato dos campos — CNPJ opcional somente com dígitos, nomes obrigatórios e, em tipo de projeto, faixa inclusiva, limite de parcelas e indicador PPI — e MUST exibir as restrições do banco (unicidade de CNPJ/nome, sobreposição de faixa, faixa final abaixo do próximo número corrente, `Torre` com limite de parcelas diferente de 3) como mensagens traduzidas, em português e compreensíveis para o usuário, sem aplicar alteração parcial e sem exibir texto cru de erro do banco.
+
+#### Scenario: CNPJ com pontuação
+- **WHEN** o ADM informa CNPJ com máscara ou pontuação
+- **THEN** a interface bloqueia o envio localmente, exigindo somente dígitos
+
+#### Scenario: Nome duplicado
+- **WHEN** o ADM salva operadora com nome já existente
+- **THEN** a interface exibe mensagem em português informando que o nome já está em uso (citando o valor informado, quando disponível), o cadastro não é criado e nenhum texto de constraint do banco é exibido
+
+#### Scenario: Faixa sobreposta
+- **WHEN** o ADM salva tipo de projeto com faixa que sobrepõe outra existente
+- **THEN** a interface exibe mensagem em português sobre a sobreposição de faixas, nada é gravado e nenhum texto de constraint do banco é exibido
+
+#### Scenario: Regra de negócio violada
+- **WHEN** o ADM salva tipo de projeto que viola uma regra verificada pelo banco (faixa inconsistente com o indicador PPI, faixa final encolhida abaixo do próximo número corrente, `Torre` com limite de parcelas diferente de 3)
+- **THEN** a interface exibe mensagem em português descrevendo a regra violada, nada é gravado e nenhum texto de constraint do banco é exibido
