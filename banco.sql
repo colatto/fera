@@ -268,7 +268,7 @@ create view public.v_dashboard_financeiro with (security_barrier = true) as
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all functions in schema public from public, anon;
 grant usage on schema public to authenticated;
-grant select on public.usuario,public.cliente,public.operadora,public.tipo_projeto,public.v_usuarios_manutencao,public.v_projetos_operacional,public.v_eventos_operacionais,public.v_dashboard_operacional,public.v_ordens_compra_administrativo,public.v_projetos_administrativo,public.v_dashboard_financeiro to authenticated;
+grant select on public.usuario,public.cliente,public.operadora,public.tipo_projeto,public.autorizacao_faturamento,public.nota_fiscal,public.recebimento,public.v_usuarios_manutencao,public.v_projetos_operacional,public.v_eventos_operacionais,public.v_dashboard_operacional,public.v_ordens_compra_administrativo,public.v_projetos_administrativo,public.v_dashboard_financeiro to authenticated;
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
