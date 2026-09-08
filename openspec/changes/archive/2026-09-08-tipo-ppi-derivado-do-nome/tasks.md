@@ -22,4 +22,4 @@
 
 - [x] 4.1 Atualizar a mensagem de `tipo_faixa_valida` em `src/lib/formato.ts` para citar a origem nominal do indicador (tipos chamados `PPI` usam faixa a partir de 1001; demais, 0–1000 com final obrigatório)
 - [x] 4.2 Verificar build/tipagem (`tsc -b`) sem referências remanescentes a `is_ppi` gravável
-- [ ] 4.3 Teste manual ponta a ponta na interface: criar tipo "ppi" (auto-preenchimento 1001/final limpa), criar tipo comum, editar tipo PPI renomeando para outro nome (bloqueio pela validação), listagem sem coluna PPI
+- [X] 4.3 Teste manual ponta a ponta na interface: criar tipo "ppi" (auto-preenchimento 1001/final limpa), criar tipo comum, editar tipo PPI renomeando para outro nome (bloqueio pela validação), listagem sem coluna PPI
