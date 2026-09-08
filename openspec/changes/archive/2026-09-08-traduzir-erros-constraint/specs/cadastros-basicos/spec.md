@@ -1,19 +1,4 @@
-## Purpose
-
-Define a manutenção dos cadastros básicos — clientes, operadoras e tipos de projeto — na interface, exclusiva do ADM, com inativação no lugar de exclusão física e regras de formulário coerentes com as restrições do banco; define também a seleção de cadastros para novos projetos.
-
-## Requirements
-
-### Requirement: Manutenção exclusiva de ADM com históricos
-A manutenção de clientes, operadoras e tipos de projeto MUST ser oferecida somente na navegação do ADM. As listas de manutenção MUST exibir cadastros ativos e inativos, e a saída de um cadastro MUST ser a inativação; a interface MUST NOT oferecer exclusão física.
-
-#### Scenario: ADM inativa cadastro
-- **WHEN** o ADM inativa uma operadora sem projetos vinculados impeditivos
-- **THEN** a operadora permanece listada como inativa e deixa de ser selecionável para novos projetos
-
-#### Scenario: Sem exclusão física
-- **WHEN** o ADM consulta as ações disponíveis de um cadastro
-- **THEN** não existe ação de excluir; somente inativação/reativação e edição
+## MODIFIED Requirements
 
 ### Requirement: Regras de formulário dos cadastros
 Os formulários MUST validar localmente o formato dos campos — CNPJ opcional somente com dígitos, nomes obrigatórios e, em tipo de projeto, faixa inclusiva, próximo número, limite de parcelas e indicador PPI — e MUST exibir as restrições do banco (unicidade de CNPJ/nome, sobreposição de faixa, `Torre` com limite de parcelas diferente de 3) como mensagens traduzidas, em português e compreensíveis para o usuário, sem aplicar alteração parcial e sem exibir texto cru de erro do banco.
@@ -33,10 +18,3 @@ Os formulários MUST validar localmente o formato dos campos — CNPJ opcional s
 #### Scenario: Regra de negócio violada
 - **WHEN** o ADM salva tipo de projeto que viola uma regra verificada pelo banco (faixa inconsistente com o indicador PPI, próximo número fora da faixa, `Torre` com limite de parcelas diferente de 3)
 - **THEN** a interface exibe mensagem em português descrevendo a regra violada, nada é gravado e nenhum texto de constraint do banco é exibido
-
-### Requirement: Seleção restrita a cadastros ativos
-Os seletores de cliente, operadora e tipo em novos projetos MUST oferecer somente cadastros ativos.
-
-#### Scenario: Cadastro inativo fora da seleção
-- **WHEN** o ADM monta um novo projeto
-- **THEN** clientes, operadoras e tipos inativos não aparecem como opção
