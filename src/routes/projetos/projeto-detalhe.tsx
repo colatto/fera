@@ -808,6 +808,12 @@ export function ProjetoDetalhe() {
               <CardDescription>Nota, recebimentos e previsão.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
+              {adm.numero_nota_fiscal ? (
+                <LinhaFinanceira
+                  rotulo="Número da nota"
+                  valor={`${adm.numero_nota_fiscal} (${formatarData(adm.data_emissao)})`}
+                />
+              ) : null}
               <LinhaFinanceira rotulo="Valor da nota" valor={formatarMoeda(adm.valor_nota)} />
               <LinhaFinanceira rotulo="Recebido" valor={formatarMoeda(adm.valor_recebido)} />
               <LinhaFinanceira rotulo="Saldo a receber" valor={formatarMoeda(adm.saldo_receber)} />

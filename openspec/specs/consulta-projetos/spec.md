@@ -37,6 +37,17 @@ O detalhe MUST exibir os dados do projeto conforme a projeção do perfil e a li
 - **WHEN** o OPER abre o detalhe do mesmo projeto
 - **THEN** a linha do tempo exibe somente eventos operacionais, sem documentos ou valores
 
+### Requirement: Número da nota no resumo financeiro
+O detalhe do projeto para ADM MUST exibir, no card "Financeiro", uma linha própria com o número da nota fiscal registrada acompanhado da data de emissão, enquanto o projeto tiver nota; o resumo financeiro MUST continuar exibindo o valor da nota, recebido, saldo a receber, previsão de recebimento e ordem de compra como já definido.
+
+#### Scenario: ADM visualiza detalhe com nota registrada
+- **WHEN** o ADM abre o detalhe de um projeto com nota fiscal registrada
+- **THEN** o card "Financeiro" exibe a linha "Número da nota" com o número da nota e a data de emissão formatada em pt-BR, além do valor da nota
+
+#### Scenario: Detalhe sem nota registrada
+- **WHEN** o ADM abre o detalhe de um projeto sem nota fiscal registrada
+- **THEN** o card "Financeiro" não exibe a linha "Número da nota" e mantém as demais linhas inalteradas
+
 ### Requirement: Exportação da consulta corrente
 A interface MUST exportar em CSV a consulta de projetos exibida, respeitando os filtros ativos e a projeção do perfil; a exportação de OPER MUST NOT conter colunas financeiras.
 
