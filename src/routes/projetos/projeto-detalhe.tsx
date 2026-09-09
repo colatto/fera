@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Link, useParams, useRouteLoaderData } from "react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -233,7 +233,10 @@ function DialogOrdemCompra({
   const [numero, setNumero] = useState("")
   const [data, setData] = useState(HOJE())
   const [centro, setCentro] = useState("")
-  const [processando, setProcessando] = useState(false)
+  const queryClient = useQueryClient()
+  // Marcado dentro do mutationFn quando registrar_ordem_compra já sucedeu:
+  // se a vinculação falhar depois, a OC precisa aparecer na listagem (design D3).
+  const registroFeito = useRef(false)
 
   const ordens = useQuery({
     queryKey: chavesProjetos.ordensCompra(),
@@ -241,20 +244,40 @@ function DialogOrdemCompra({
     enabled: aberto,
   })
 
-  async function submeter() {
-    setProcessando(true)
-    try {
-      let idOc = Number(ocId)
-      if (modo === "nova") {
-        idOc = await registrarOrdemCompra(numero.trim(), data, centro.trim() || null)
+  const mutacao = useAcaoFluxo(
+    async (vars: {
+      modo: "vincular" | "nova"
+      ocId: number
+      numero: string
+      data: string
+      centro: string | null
+    }) => {
+      let idOc = vars.ocId
+      if (vars.modo === "nova") {
+        idOc = await registrarOrdemCompra(vars.numero, vars.data, vars.centro)
+        registroFeito.current = true
       }
       await vincularOrdemCompra(projetoId, idOc)
+    },
+  )
+
+  async function submeter() {
+    registroFeito.current = false
+    try {
+      await mutacao.mutateAsync({
+        modo,
+        ocId: Number(ocId),
+        numero: numero.trim(),
+        data,
+        centro: centro.trim() || null,
+      })
       toast.success("Ordem de compra vinculada ao projeto.")
       aoFechar()
     } catch (erro) {
+      if (registroFeito.current) {
+        void queryClient.invalidateQueries({ queryKey: ["ordens-compra"] })
+      }
       toast.error(mensagemDeErro(erro))
-    } finally {
-      setProcessando(false)
     }
   }
 
@@ -327,7 +350,7 @@ function DialogOrdemCompra({
           <Button variant="outline" onClick={aoFechar}>
             Voltar
           </Button>
-          <Button disabled={!valido || processando} onClick={() => void submeter()}>
+          <Button disabled={!valido || mutacao.isPending} onClick={() => void submeter()}>
             Confirmar
           </Button>
         </DialogFooter>
@@ -490,7 +513,10 @@ function DialogLote({
   aoFechar: () => void
 }) {
   const [linhas, setLinhas] = useState<LinhaLote[]>([])
-  const [processando, setProcessando] = useState(false)
+
+  const mutacao = useAcaoFluxo((itens: ItemRecebimentoLote[]) =>
+    confirmarRecebimentosLote(itens),
+  )
 
   // Projetos com nota emitida e saldo em aberto (projeção ADM) alimentam o lote.
   const projetos = useQuery({
@@ -518,21 +544,18 @@ function DialogLote({
   }
 
   async function submeter() {
-    setProcessando(true)
     const itens: ItemRecebimentoLote[] = linhas.map((linha) => ({
       nota_fiscal_id: Number(linha.notaFiscalId),
       data_recebimento: linha.data,
       valor_recebido: Number(linha.valor.replace(",", ".")),
     }))
     try {
-      await confirmarRecebimentosLote(itens)
+      await mutacao.mutateAsync(itens)
       toast.success("Recebimentos do lote confirmados.")
       aoFechar()
     } catch (erro) {
       // Falha integral (spec fluxo-projetos): nada é aplicado.
       toast.error(`Lote não aplicado: ${mensagemDeErro(erro)}`)
-    } finally {
-      setProcessando(false)
     }
   }
 
@@ -609,7 +632,7 @@ function DialogLote({
             Voltar
           </Button>
           <Button
-            disabled={linhas.length === 0 || !valido || processando}
+            disabled={linhas.length === 0 || !valido || mutacao.isPending}
             onClick={() => void submeter()}
           >
             Confirmar lote
