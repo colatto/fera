@@ -247,7 +247,7 @@ create view public.v_projetos_operacional with (security_barrier = true) as
   from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
   where public.usuario_ativo();
 create view public.v_eventos_operacionais with (security_barrier = true) as
-  select e.id,e.projeto_id,e.realizado_por,e.tipo,e.status_anterior,e.status_novo,e.motivo_cancelamento,e.detalhes,e.realizado_em
+  select e.id,e.projeto_id,e.realizado_por,e.tipo,e.status_anterior,e.status_novo,e.motivo_cancelamento,case when public.usuario_adm() then e.detalhes end as detalhes,e.realizado_em
   from public.evento_projeto e where public.usuario_ativo();
 create view public.v_dashboard_operacional with (security_barrier = true) as
   select status, count(*)::bigint quantidade from public.projeto where status <> 'CANCELADO' and public.usuario_ativo() group by status;

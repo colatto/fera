@@ -73,6 +73,19 @@ const HOJE = () => new Date().toISOString().slice(0, 10)
 // Datas puras (date) ganham meio-dia para ordenar estável na linha do tempo.
 const aoMeioDia = (data: string) => `${data}T12:00:00`
 
+// Humaniza `detalhes` por tipo de evento; o default é omitir, nunca serializar JSON.
+function descricaoDetalhesEvento(evento: EventoProjeto): string | undefined {
+  if (evento.tipo === "COMPATIBILIZACAO_FUNDACAO") {
+    const detalhes = evento.detalhes as { marcada?: unknown } | null
+    if (detalhes && typeof detalhes.marcada === "boolean") {
+      return detalhes.marcada
+        ? "Fundação marcada como compatibilizada"
+        : "Compatibilização desmarcada"
+    }
+  }
+  return undefined
+}
+
 function montarItensAdm(
   projeto: ProjetoAdministrativo,
   eventos: EventoProjeto[],
@@ -89,8 +102,7 @@ function montarItensAdm(
         ? `: ${ROTULOS_STATUS[evento.status_anterior]} → ${ROTULOS_STATUS[evento.status_novo]}`
         : ""),
     descricao:
-      evento.motivo_cancelamento ??
-      (evento.detalhes ? JSON.stringify(evento.detalhes) : undefined),
+      evento.motivo_cancelamento ?? descricaoDetalhesEvento(evento),
     detentor: nomes[evento.realizado_por ?? ""],
   }))
 
