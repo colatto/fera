@@ -64,6 +64,21 @@ Cada ordem de compra MUST ter `numero` único no sistema, e o registro de uma no
 - **WHEN** o ADM vincula, pelo modo "Vincular existente", uma OC já registrada a outro projeto
 - **THEN** a vinculação ocorre normalmente, sem exigir registro de nova OC
 
+### Requirement: Unicidade do número da nota fiscal
+Cada nota fiscal MUST ter `numero` único no sistema, e o registro de nota fiscal (`registrar_nota_fiscal`) com número já existente — inclusive em projeto diferente — MUST falhar transacionalmente sem criar a nota nem alterar o projeto. O número MUST ser armazenado sem espaços nas pontas; tentativa de registrar número com espaços nas pontas MUST falhar transacionalmente. A falha MUST ser exibida na interface como mensagem amigável que identifique o número duplicado, sem alterar o estado exibido do projeto.
+
+#### Scenario: Registro de nota com número inédito
+- **WHEN** o ADM registra uma nota fiscal com número que não existe no sistema
+- **THEN** a nota é criada e o fluxo segue como hoje: status passa a `NOTA_EMITIDA` com evento na linha do tempo
+
+#### Scenario: Registro de nota com número duplicado em outro projeto
+- **WHEN** o ADM registra uma nota fiscal com número igual ao de uma nota já existente em outro projeto
+- **THEN** a operação falha transacionalmente, nenhuma nota é criada, o projeto permanece em `AUTORIZADO_FATURAMENTO`, e a interface exibe mensagem amigável indicando que já existe nota fiscal com aquele número
+
+#### Scenario: Número com espaços nas pontas
+- **WHEN** uma chamada à RPC `registrar_nota_fiscal` recebe número com espaços no início ou no fim
+- **THEN** a operação falha transacionalmente e nenhuma nota é criada
+
 ### Requirement: Ações financeiras exclusivas de ADM
 Registrar ordem de compra (`registrar_ordem_compra`, `vincular_ordem_compra`), autorizar faturamento (`autorizar_faturamento`), registrar nota fiscal (`registrar_nota_fiscal`) e registrar recebimento (`registrar_recebimento`) MUST ser oferecidos somente na navegação do ADM; o sucesso de qualquer delas MUST refletir imediatamente em status, linha do tempo e dashboards — sem recarregar a página nem navegar entre telas —, e a falha MUST exibir a mensagem transacional do banco sem alterar o estado exibido. A vinculação de ordem de compra em qualquer um dos modos do diálogo (vincular existente; registrar nova e vincular em seguida) MUST refletir imediatamente o status `OC_REGISTRADA`, o evento correspondente na linha do tempo e a OC na listagem de ordens de compra do próprio diálogo. Quando o registro da nova OC succeeds e a vinculação subsequente falha, a interface MUST exibir o erro da vinculação, o projeto MUST permanecer inalterado e a OC registrada MUST permanecer disponível para vinculação posterior pelo modo "Vincular existente".
 

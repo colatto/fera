@@ -92,6 +92,14 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
     comValor: "O número da ordem de compra não pode começar ou terminar com espaços.",
     semValor: "O número da ordem de compra não pode começar ou terminar com espaços.",
   },
+  nota_fiscal_numero_unico: {
+    comValor: "Já existe uma nota fiscal com o número X.",
+    semValor: "Já existe uma nota fiscal com este número.",
+  },
+  nota_fiscal_numero_normalizada: {
+    comValor: "O número da nota fiscal não pode começar ou terminar com espaços.",
+    semValor: "O número da nota fiscal não pode começar ou terminar com espaços.",
+  },
 }
 
 // Códigos Postgres traduzíveis: unique, exclusion e check (design D2).

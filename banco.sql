@@ -61,7 +61,8 @@ create table public.autorizacao_faturamento (
 create table public.nota_fiscal (
   id bigint generated always as identity primary key, projeto_id bigint not null unique references public.projeto(id) on delete restrict,
   numero varchar(50) not null, data_emissao date not null, valor numeric(15,2) not null check (valor > 0),
-  registrado_por uuid not null references public.usuario(id) on delete restrict, registrado_em timestamptz not null default now(), atualizado_em timestamptz not null default now()
+  registrado_por uuid not null references public.usuario(id) on delete restrict, registrado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
+  constraint nota_fiscal_numero_normalizada check (numero = btrim(numero)), constraint nota_fiscal_numero_unico unique (numero)
 );
 create table public.recebimento (
   id bigint generated always as identity primary key, nota_fiscal_id bigint not null references public.nota_fiscal(id) on delete restrict,
