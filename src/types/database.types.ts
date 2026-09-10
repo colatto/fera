@@ -332,6 +332,7 @@ export type Database = {
           status: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id: number
           uf: string
+          valor: number
         }
         Insert: {
           ano: number
@@ -356,6 +357,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id: number
           uf: string
+          valor: number
         }
         Update: {
           ano?: number
@@ -380,6 +382,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id?: number
           uf?: string
+          valor?: number
         }
         Relationships: [
           {
@@ -615,6 +618,7 @@ export type Database = {
         Row: {
           saldo_receber: number | null
           valor_faturado: number | null
+          valor_projetos: number | null
           valor_recebido: number | null
         }
         Relationships: []
@@ -771,6 +775,7 @@ export type Database = {
           status: Database["public"]["Enums"]["project_status"] | null
           tipo_projeto: string | null
           uf: string | null
+          valor: number | null
           valor_nota: number | null
           valor_recebido: number | null
         }
@@ -869,6 +874,7 @@ export type Database = {
           p_responsavel_id: string
           p_tipo_id: number
           p_uf: string
+          p_valor: number
         }
         Returns: number
       }
@@ -1045,7 +1051,7 @@ export type CompositeTypes<
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {

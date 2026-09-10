@@ -43,6 +43,7 @@ export interface ParametrosCriacao {
   p_identificador_operadora: string
   p_cidade: string
   p_uf: string
+  p_valor: number
   p_responsavel_id: string
   p_anterior_id?: number
 }

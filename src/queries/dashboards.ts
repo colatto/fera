@@ -44,18 +44,20 @@ export interface DashboardFinanceiro {
   faturado: number
   recebido: number
   saldo: number
+  projetos: number
 }
 
 export async function obterDashboardFinanceiro(): Promise<DashboardFinanceiro> {
   const { data, error } = await supabase
     .from("v_dashboard_financeiro")
-    .select("valor_faturado, valor_recebido, saldo_receber")
+    .select("valor_faturado, valor_recebido, saldo_receber, valor_projetos")
     .maybeSingle()
   if (error) throw error
   return {
     faturado: Number(data?.valor_faturado) || 0,
     recebido: Number(data?.valor_recebido) || 0,
     saldo: Number(data?.saldo_receber) || 0,
+    projetos: Number(data?.valor_projetos) || 0,
   }
 }
 

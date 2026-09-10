@@ -58,6 +58,7 @@ export function ProjetoNovo() {
   const [identificadorOperadora, setIdentificadorOperadora] = useState("")
   const [cidade, setCidade] = useState("")
   const [uf, setUf] = useState("")
+  const [valor, setValor] = useState("")
   const [responsavelId, setResponsavelId] = useState("")
   const [predecessorId, setPredecessorId] = useState(SEM_PREDECESSOR)
   const [processando, setProcessando] = useState(false)
@@ -77,6 +78,8 @@ export function ProjetoNovo() {
     queryFn: () => listarProjetos("ADM", { ...filtrosVazios, status: "CANCELADO" }),
   })
 
+  // Valor obrigatório e positivo, validado localmente antes da RPC (spec fluxo-projetos).
+  const valorNumerico = Number(valor.replace(",", "."))
   const valido = useMemo(
     () =>
       tipoId !== "" &&
@@ -86,8 +89,9 @@ export function ProjetoNovo() {
       identificadorOperadora.trim() !== "" &&
       cidade.trim() !== "" &&
       /^[A-Z]{2}$/.test(uf.trim()) &&
+      valorNumerico > 0 &&
       responsavelId !== "",
-    [tipoId, clienteId, identificadorCliente, operadoraId, identificadorOperadora, cidade, uf, responsavelId],
+    [tipoId, clienteId, identificadorCliente, operadoraId, identificadorOperadora, cidade, uf, valorNumerico, responsavelId],
   )
 
   async function submeter() {
@@ -100,6 +104,7 @@ export function ProjetoNovo() {
       p_identificador_operadora: identificadorOperadora.trim(),
       p_cidade: cidade.trim(),
       p_uf: uf.trim().toUpperCase(),
+      p_valor: valorNumerico,
       p_responsavel_id: responsavelId,
     }
     if (predecessorId !== SEM_PREDECESSOR) parametros.p_anterior_id = Number(predecessorId)
@@ -210,6 +215,16 @@ export function ProjetoNovo() {
               value={uf}
               onChange={(e) => setUf(e.target.value.toUpperCase())}
               placeholder="SP"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="valor-projeto">Valor (R$)</Label>
+            <Input
+              id="valor-projeto"
+              inputMode="decimal"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              placeholder="0,00"
             />
           </div>
           <div className="flex flex-col gap-1.5">

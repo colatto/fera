@@ -46,6 +46,7 @@ create table public.projeto (
   tipo_projeto_id bigint not null references public.tipo_projeto(id) on delete restrict, cliente_id bigint not null references public.cliente(id) on delete restrict,
   identificador_cliente varchar(100) not null, operadora_id bigint not null references public.operadora(id) on delete restrict, identificador_operadora varchar(100) not null,
   ordem_compra_id bigint references public.ordem_compra(id) on delete restrict, cidade varchar(100) not null, uf char(2) not null check (uf ~ '^[A-Z]{2}$'),
+  valor numeric(15,2) not null constraint projeto_valor_positivo check (valor > 0),
   responsavel_interno_id uuid not null references public.usuario(id) on delete restrict, status public.project_status not null default 'CADASTRADO', data_envio date,
   fundacao_compatibilizada boolean not null default false, fundacao_compatibilizada_por uuid references public.usuario(id) on delete restrict, fundacao_compatibilizada_em timestamptz,
   projeto_anterior_id bigint unique references public.projeto(id) on delete restrict, criado_por uuid not null references public.usuario(id) on delete restrict,
@@ -137,7 +138,7 @@ create or replace function public.usuario_adm() returns boolean language sql sta
   select exists (select 1 from public.usuario u where u.id = auth.uid() and u.ativo and u.perfil = 'ADM')
 $$;
 
-create or replace function public.criar_projeto(p_tipo_id bigint, p_cliente_id bigint, p_identificador_cliente varchar, p_operadora_id bigint, p_identificador_operadora varchar, p_cidade varchar, p_uf char(2), p_responsavel_id uuid, p_anterior_id bigint default null)
+create or replace function public.criar_projeto(p_tipo_id bigint, p_cliente_id bigint, p_identificador_cliente varchar, p_operadora_id bigint, p_identificador_operadora varchar, p_cidade varchar, p_uf char(2), p_valor numeric, p_responsavel_id uuid, p_anterior_id bigint default null)
 returns bigint language plpgsql security definer set search_path = public, auth as $$
 declare v_tipo public.tipo_projeto%rowtype; v_numero integer; v_id bigint; v_ano smallint := extract(year from current_date)::smallint;
 begin
@@ -152,8 +153,8 @@ begin
   perform 1 from public.usuario where id = p_responsavel_id and ativo; if not found then raise exception 'Responsável inexistente ou inativo'; end if;
   if p_anterior_id is not null then perform 1 from public.projeto where id = p_anterior_id and status = 'CANCELADO'; if not found then raise exception 'Projeto anterior deve estar cancelado'; end if; end if;
   v_numero := v_tipo.proximo_numero; update public.tipo_projeto set proximo_numero = v_numero + 1 where id = v_tipo.id;
-  insert into public.projeto(numero, ano, codigo_pasta, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, responsavel_interno_id, projeto_anterior_id, criado_por)
-  values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_responsavel_id, p_anterior_id, auth.uid()) returning id into v_id;
+  insert into public.projeto(numero, ano, codigo_pasta, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, valor, responsavel_interno_id, projeto_anterior_id, criado_por)
+  values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_valor, p_responsavel_id, p_anterior_id, auth.uid()) returning id into v_id;
   insert into public.evento_projeto(projeto_id, realizado_por, tipo, detalhes) values(v_id, auth.uid(), 'CRIACAO', jsonb_build_object('origem','cadastro'));
   if p_anterior_id is not null then
     insert into public.evento_projeto(projeto_id, realizado_por, tipo, detalhes) values(v_id, auth.uid(), 'SUBSTITUICAO', jsonb_build_object('projeto_anterior_id',p_anterior_id));
@@ -257,14 +258,15 @@ create view public.v_projetos_administrativo with (security_barrier = true) as
   select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,
     oc.numero numero_oc,oc.data_oc,oc.centro_custo,af.autorizado_por,af.autorizado_em,nf.id nota_fiscal_id,nf.numero numero_nota_fiscal,nf.data_emissao,nf.valor valor_nota,
     coalesce(r.valor_recebido,0::numeric) valor_recebido, nf.valor - coalesce(r.valor_recebido,0::numeric) saldo_receber,
-    (nf.data_emissao + 30) previsao_recebimento,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em
+    (nf.data_emissao + 30) previsao_recebimento,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.valor
   from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
     left join public.ordem_compra oc on oc.id=p.ordem_compra_id left join public.autorizacao_faturamento af on af.projeto_id=p.id left join public.nota_fiscal nf on nf.projeto_id=p.id
     left join lateral (select sum(valor_recebido)::numeric as valor_recebido from public.recebimento where nota_fiscal_id=nf.id) r on true
   where public.usuario_adm();
 create view public.v_dashboard_financeiro with (security_barrier = true) as
   select coalesce(sum(nf.valor),0::numeric(15,2)) valor_faturado,coalesce(sum(r.valor_recebido),0::numeric(15,2)) valor_recebido,
-    coalesce(sum(nf.valor - coalesce(r.valor_recebido,0)),0::numeric(15,2)) saldo_receber
+    coalesce(sum(nf.valor - coalesce(r.valor_recebido,0)),0::numeric(15,2)) saldo_receber,
+    coalesce((select sum(p.valor) from public.projeto p where p.status <> 'CANCELADO'),0::numeric(15,2)) valor_projetos
   from public.nota_fiscal nf left join lateral (select sum(valor_recebido)::numeric as valor_recebido from public.recebimento where nota_fiscal_id=nf.id) r on true
   having public.usuario_adm();
 revoke all on all tables in schema public from anon, authenticated;
@@ -274,4 +276,4 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,uuid,bigint),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date,numeric),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid,bigint),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date,numeric),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.dashboard_operacional(date,date) to authenticated;

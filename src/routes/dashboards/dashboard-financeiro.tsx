@@ -18,7 +18,7 @@ export function DashboardFinanceiro() {
       <div>
         <h1 className="text-xl font-semibold">Dashboard financeiro</h1>
         <p className="text-sm text-muted-foreground">
-          Faturado, recebido e saldo a receber conforme as notas fiscais.
+          Faturado, recebido, saldo a receber e carteira de projetos.
         </p>
       </div>
 
@@ -27,7 +27,7 @@ export function DashboardFinanceiro() {
       ) : consulta.isError ? (
         <ErroDeConsulta erro={consulta.error} tentarNovamente={() => void consulta.refetch()} />
       ) : (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader>
               <CardDescription className="flex items-center gap-2">
@@ -55,6 +55,15 @@ export function DashboardFinanceiro() {
               <CardTitle className="text-3xl">{formatarMoeda(consulta.data?.saldo ?? 0)}</CardTitle>
               <CardContent className="px-0 pt-1 text-xs text-muted-foreground">
                 Notas menos recebimentos.
+              </CardContent>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Projetos</CardDescription>
+              <CardTitle className="text-3xl">{formatarMoeda(consulta.data?.projetos ?? 0)}</CardTitle>
+              <CardContent className="px-0 pt-1 text-xs text-muted-foreground">
+                Soma do valor dos projetos não cancelados.
               </CardContent>
             </CardHeader>
           </Card>

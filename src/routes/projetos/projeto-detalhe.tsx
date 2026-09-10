@@ -814,6 +814,7 @@ export function ProjetoDetalhe() {
             <Campo rotulo="Identificador da operadora" valor={p.identificador_operadora ?? "—"} />
             <Campo rotulo="Tipo de projeto" valor={p.tipo_projeto ?? "—"} />
             <Campo rotulo="Cidade / UF" valor={`${p.cidade ?? "—"} / ${p.uf ?? "—"}`} />
+            {ehAdm ? <Campo rotulo="Valor" valor={formatarMoeda(adm.valor)} /> : null}
             <Campo rotulo="Data de envio" valor={formatarData(p.data_envio)} />
             <Campo rotulo="Criado em" valor={formatarDataHora(p.criado_em)} />
             <Campo

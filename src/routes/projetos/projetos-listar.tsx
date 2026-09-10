@@ -183,6 +183,12 @@ function colunasAdministrativas(): ColumnDef<LinhaProjeto>[] {
     colunaTexto((l) => l.cidade, "Cidade"),
     colunaTexto((l) => l.uf, "UF"),
     colunaTexto((l) => l.data_envio, "Envio", formatarData),
+    {
+      accessorFn: (l) => comoAdm(l).valor ?? 0,
+      id: "Valor",
+      header: "Valor",
+      cell: (info) => formatarMoeda(info.getValue<number>()),
+    },
     colunaTexto((l) => comoAdm(l).numero_oc, "OC"),
     colunaTexto((l) => comoAdm(l).data_oc, "Data OC", formatarData),
     colunaTexto((l) => comoAdm(l).numero_nota_fiscal, "Nota fiscal"),
@@ -218,7 +224,7 @@ function exportarConsulta(
       ? [
           "Código", "Status", "Cliente", "Identificador cliente", "Operadora",
           "Identificador operadora", "Tipo", "Cidade", "UF", "Data de envio",
-          "OC", "Data OC", "Centro de custo", "Nota fiscal", "Data de emissão",
+          "Valor do projeto", "OC", "Data OC", "Centro de custo", "Nota fiscal", "Data de emissão",
           "Valor da nota", "Valor recebido", "Saldo a receber", "Previsão de recebimento",
         ]
       : [
@@ -248,6 +254,7 @@ function linhaToCsvOper(l: ProjetoOperacional): string[] {
 function linhaToCsvAdm(l: ProjetoAdministrativo): string[] {
   return [
     ...linhaToCsvOper(l),
+    l.valor?.toFixed(2).replace(".", ",") ?? "",
     l.numero_oc ?? "", formatarData(l.data_oc), l.centro_custo ?? "",
     l.numero_nota_fiscal ?? "", formatarData(l.data_emissao),
     l.valor_nota?.toFixed(2).replace(".", ",") ?? "",
