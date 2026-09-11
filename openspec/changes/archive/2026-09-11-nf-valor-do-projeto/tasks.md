@@ -13,7 +13,7 @@
 
 ## 3. Referência declarativa e verificação
 
-- [ ] 3.1 Atualizar `banco.sql` com a nova definição de `registrar_nota_fiscal`
+- [x] 3.1 Atualizar `banco.sql` com a nova definição de `registrar_nota_fiscal`
 - [x] 3.2 Verificar no app: diálogo exibe o valor do projeto somente leitura, registro cria nota com valor igual ao do projeto, status vira `NOTA_EMITIDA` com evento na linha do tempo
 - [x] 3.3 Verificar falha transacional preservada: número duplicado de nota continua bloqueando sem alterar o projeto
-- [ ] 3.4 Após o front no ar, remover via MCP a assinatura antiga `registrar_nota_fiscal(bigint, varchar, date, numeric)` e atualizar `banco.sql` (se ela constava com a assinatura antiga no grant, ajustar)
+- [x] 3.4 Após o front no ar, remover via MCP a assinatura antiga `registrar_nota_fiscal(bigint, varchar, date, numeric)` e atualizar `banco.sql` (se ela constava com a assinatura antiga no grant, ajustar)

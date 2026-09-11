@@ -94,6 +94,25 @@ Cada nota fiscal MUST ter `numero` único no sistema, e o registro de nota fisca
 - **WHEN** uma chamada à RPC `registrar_nota_fiscal` recebe número com espaços no início ou no fim
 - **THEN** a operação falha transacionalmente e nenhuma nota é criada
 
+### Requirement: Valor da nota fiscal derivado do projeto
+O registro de nota fiscal MUST usar exclusivamente o valor do projeto: a RPC `registrar_nota_fiscal` MUST derivar o valor da nota de `projeto.valor` e MUST NOT aceitar valor informado pelo cliente (nenhuma assinatura da RPC recebe parâmetro de valor). A nota criada MUST ficar com valor igual ao valor gravado do projeto. O diálogo "Registrar nota fiscal" MUST exibir o valor do projeto como texto somente leitura, formatado em moeda, e MUST NOT oferecer campo editável de valor; a habilitação do registro MUST depender apenas de número e data de emissão preenchidos. As regras existentes do registro (exigir ADM, exigir status `AUTORIZADO_FATURAMENTO`, unicidade do número, transição para `NOTA_EMITIDA` com evento) permanecem inalteradas.
+
+#### Scenario: Diálogo exibe o valor do projeto como somente leitura
+- **WHEN** o ADM abre o diálogo "Registrar nota fiscal" em um projeto autorizado
+- **THEN** o diálogo exibe o valor do projeto como texto formatado em moeda, não oferece campo editável de valor, e o botão de registro habilita com número e data de emissão preenchidos
+
+#### Scenario: Nota registrada fica com o valor do projeto
+- **WHEN** o ADM registra uma nota fiscal com número e data válidos
+- **THEN** a nota é criada com valor igual ao valor gravado do projeto, o status passa a `NOTA_EMITIDA` e a linha do tempo exibe a nota com esse valor e a previsão de recebimento
+
+#### Scenario: RPC não aceita valor do cliente
+- **WHEN** uma chamada à RPC `registrar_nota_fiscal` tenta informar um argumento de valor
+- **THEN** a chamada falha por ausência de assinatura compatível e nenhuma nota é criada, permanecendo o projeto em `AUTORIZADO_FATURAMENTO`
+
+#### Scenario: Recebimentos limitados ao valor do projeto
+- **WHEN** a nota derivada do projeto está emitida e o ADM lança recebimentos até a quitação
+- **THEN** o total recebido não pode exceder o valor do projeto, e a parcela que o atinge integralmente transiciona o projeto para `PAGO`
+
 ### Requirement: Ações financeiras exclusivas de ADM
 Registrar ordem de compra (`registrar_ordem_compra`, `vincular_ordem_compra`), autorizar faturamento (`autorizar_faturamento`), registrar nota fiscal (`registrar_nota_fiscal`) e registrar recebimento (`registrar_recebimento`) MUST ser oferecidos somente na navegação do ADM; o sucesso de qualquer delas MUST refletir imediatamente em status, linha do tempo e dashboards — sem recarregar a página nem navegar entre telas —, e a falha MUST exibir a mensagem transacional do banco sem alterar o estado exibido. A vinculação de ordem de compra em qualquer um dos modos do diálogo (vincular existente; registrar nova e vincular em seguida) MUST refletir imediatamente o status `OC_REGISTRADA`, o evento correspondente na linha do tempo e a OC na listagem de ordens de compra do próprio diálogo. Quando o registro da nova OC succeeds e a vinculação subsequente falha, a interface MUST exibir o erro da vinculação, o projeto MUST permanecer inalterado e a OC registrada MUST permanecer disponível para vinculação posterior pelo modo "Vincular existente".
 
