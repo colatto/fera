@@ -375,24 +375,26 @@ function DialogNotaFiscal({
   aberto,
   aoFechar,
   projetoId,
+  valorProjeto,
 }: {
   aberto: boolean
   aoFechar: () => void
   projetoId: number
+  valorProjeto: number | null
 }) {
   const [numero, setNumero] = useState("")
   const [data, setData] = useState(HOJE())
-  const [valor, setValor] = useState("")
-  const mutacao = useAcaoFluxo((vars: { numero: string; data: string; valor: number }) =>
-    registrarNotaFiscal(projetoId, vars.numero, vars.data, vars.valor),
+  // A nota é pelo valor do projeto: derivado no banco (spec fluxo-projetos),
+  // aqui apenas exibido como somente leitura.
+  const mutacao = useAcaoFluxo((vars: { numero: string; data: string }) =>
+    registrarNotaFiscal(projetoId, vars.numero, vars.data),
   )
 
-  const valorNumerico = Number(valor.replace(",", "."))
-  const valido = numero.trim() !== "" && data !== "" && valorNumerico > 0
+  const valido = numero.trim() !== "" && data !== ""
 
   async function submeter() {
     try {
-      await mutacao.mutateAsync({ numero: numero.trim(), data, valor: valorNumerico })
+      await mutacao.mutateAsync({ numero: numero.trim(), data })
       toast.success("Nota fiscal registrada.")
       aoFechar()
     } catch (erro) {
@@ -419,14 +421,11 @@ function DialogNotaFiscal({
             <Input id="nf-data" type="date" value={data} onChange={(e) => setData(e.target.value)} />
           </div>
           <div className="col-span-2 flex flex-col gap-1.5">
-            <Label htmlFor="nf-valor">Valor (R$)</Label>
-            <Input
-              id="nf-valor"
-              inputMode="decimal"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="0,00"
-            />
+            <Label>Valor (R$)</Label>
+            <p className="text-sm font-medium">{formatarMoeda(valorProjeto)}</p>
+            <p className="text-xs text-muted-foreground">
+              Valor do projeto — a nota é emitida por esse valor.
+            </p>
           </div>
         </div>
         <DialogFooter>
@@ -909,7 +908,12 @@ export function ProjetoDetalhe() {
       {ehAdm ? (
         <>
           <DialogOrdemCompra aberto={ocAberta} aoFechar={() => setOcAberta(false)} projetoId={id} />
-          <DialogNotaFiscal aberto={notaAberta} aoFechar={() => setNotaAberta(false)} projetoId={id} />
+          <DialogNotaFiscal
+            aberto={notaAberta}
+            aoFechar={() => setNotaAberta(false)}
+            projetoId={id}
+            valorProjeto={adm.valor}
+          />
           {adm.nota_fiscal_id ? (
             <DialogRecebimento
               aberto={recebimentoAberto}

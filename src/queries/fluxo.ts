@@ -99,13 +99,11 @@ export async function registrarNotaFiscal(
   p_projeto: number,
   p_numero: string,
   p_data: string,
-  p_valor: number,
 ): Promise<number> {
   const { data, error } = await supabase.rpc("registrar_nota_fiscal", {
     p_projeto,
     p_numero,
     p_data,
-    p_valor,
   })
   if (error) throw error
   return Number(data)

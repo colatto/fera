@@ -891,12 +891,7 @@ export type Database = {
         Returns: undefined
       }
       registrar_nota_fiscal: {
-        Args: {
-          p_data: string
-          p_numero: string
-          p_projeto: number
-          p_valor: number
-        }
+        Args: { p_data: string; p_numero: string; p_projeto: number }
         Returns: number
       }
       registrar_ordem_compra: {
