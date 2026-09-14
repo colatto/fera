@@ -72,9 +72,9 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
   },
   tipo_faixa_valida: {
     comValor:
-      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 1001 (final opcional); os demais, 0–1000 com faixa final obrigatória.",
+      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 5001 (final opcional); os demais, 0–5000 com faixa final obrigatória.",
     semValor:
-      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 1001 (final opcional); os demais, 0–1000 com faixa final obrigatória.",
+      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 5001 (final opcional); os demais, 0–5000 com faixa final obrigatória.",
   },
   tipo_proximo_valido: {
     comValor: "O próximo número deve estar dentro da faixa definida.",

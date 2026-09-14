@@ -1,19 +1,4 @@
-## Purpose
-
-Define a manutenção dos cadastros básicos — clientes, operadoras e tipos de projeto — na interface, exclusiva do ADM, com inativação no lugar de exclusão física e regras de formulário coerentes com as restrições do banco; define também a seleção de cadastros para novos projetos.
-
-## Requirements
-
-### Requirement: Manutenção exclusiva de ADM com históricos
-A manutenção de clientes, operadoras e tipos de projeto MUST ser oferecida somente na navegação do ADM. As listas de manutenção MUST exibir cadastros ativos e inativos, e a saída de um cadastro MUST ser a inativação; a interface MUST NOT oferecer exclusão física.
-
-#### Scenario: ADM inativa cadastro
-- **WHEN** o ADM inativa uma operadora sem projetos vinculados impeditivos
-- **THEN** a operadora permanece listada como inativa e deixa de ser selecionável para novos projetos
-
-#### Scenario: Sem exclusão física
-- **WHEN** o ADM consulta as ações disponíveis de um cadastro
-- **THEN** não existe ação de excluir; somente inativação/reativação e edição
+## MODIFIED Requirements
 
 ### Requirement: Regras de formulário dos cadastros
 Os formulários MUST validar localmente o formato dos campos — CNPJ opcional somente com dígitos, nomes obrigatórios e, em tipo de projeto, faixa inclusiva e limite de parcelas — e MUST exibir as restrições do banco (unicidade de CNPJ/nome, sobreposição de faixa, faixa inconsistente com o nome do tipo, faixa final abaixo do próximo número corrente, `Torre` com limite de parcelas fora de 1 a 3) como mensagens traduzidas, em português e compreensíveis para o usuário, sem aplicar alteração parcial e sem exibir texto cru de erro do banco. No formulário de tipo de projeto, quando o nome informado for `Torre`, o campo limite de parcelas MUST oferecer somente as opções 1, 2 e 3; para os demais nomes, o campo permanece livre com valor mínimo 1.
@@ -90,10 +75,3 @@ O próximo número de numeração de um tipo de projeto MUST ser estado mantido 
 #### Scenario: Próximo número somente leitura na interface
 - **WHEN** o ADM abre o formulário de criar ou editar tipo de projeto
 - **THEN** não existe campo editável de próximo número, e a listagem de tipos exibe o valor corrente como informação
-
-### Requirement: Seleção restrita a cadastros ativos
-Os seletores de cliente, operadora e tipo em novos projetos MUST oferecer somente cadastros ativos.
-
-#### Scenario: Cadastro inativo fora da seleção
-- **WHEN** o ADM monta um novo projeto
-- **THEN** clientes, operadoras e tipos inativos não aparecem como opção

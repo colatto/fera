@@ -50,14 +50,14 @@ const ehNomePpi = (nome: string) => nome.trim().toLowerCase() === "ppi"
 function validarTipo(valores: ValoresTipoProjeto): string | null {
   if (!valores.nome.trim()) return "Informe o nome do tipo."
   if (ehNomePpi(valores.nome)) {
-    if (valores.faixa_inicial < 1001) return "Tipo PPI: a faixa inicial deve ser 1001 ou maior."
+    if (valores.faixa_inicial < 5001) return "Tipo PPI: a faixa inicial deve ser 5001 ou maior."
     if (valores.faixa_final !== null && valores.faixa_final < valores.faixa_inicial)
       return "A faixa final deve ser maior ou igual à inicial."
   } else {
-    if (valores.faixa_inicial < 0 || valores.faixa_inicial > 1000)
-      return "Tipo não PPI: a faixa inicial deve ficar entre 0 e 1000."
-    if (valores.faixa_final === null || valores.faixa_final > 1000)
-      return "Tipo não PPI: a faixa final é obrigatória e deve ficar até 1000."
+    if (valores.faixa_inicial < 0 || valores.faixa_inicial > 5000)
+      return "Tipo não PPI: a faixa inicial deve ficar entre 0 e 5000."
+    if (valores.faixa_final === null || valores.faixa_final > 5000)
+      return "Tipo não PPI: a faixa final é obrigatória e deve ficar até 5000."
     if (valores.faixa_final < valores.faixa_inicial)
       return "A faixa final deve ser maior ou igual à inicial."
   }
@@ -80,7 +80,7 @@ function DialogTipo({
   const [valores, setValores] = useState<ValoresTipoProjeto>({
     nome: edicao?.nome ?? "",
     faixa_inicial: edicao?.faixa_inicial ?? 0,
-    faixa_final: edicao?.faixa_final ?? 1000,
+    faixa_final: edicao?.faixa_final ?? 5000,
     limite_parcelas: edicao?.limite_parcelas ?? 1,
   })
 
@@ -116,7 +116,7 @@ function DialogTipo({
           <DialogTitle>{edicao ? "Editar tipo de projeto" : "Novo tipo de projeto"}</DialogTitle>
           <DialogDescription>
             Faixas de numeração não podem se sobrepor. Tipos chamados PPI usam faixa a partir de
-            1001 (final opcional); os demais ficam em 0–1000. O tipo Torre exige limite de
+            5001 (final opcional); os demais ficam em 0–5000. O tipo Torre exige limite de
             parcelas entre 1 e 3.
           </DialogDescription>
         </DialogHeader>
@@ -133,7 +133,7 @@ function DialogTipo({
                   // de PPI. A transição inversa não restaura valores; a validação
                   // local bloqueia faixas inconsistentes com o novo nome.
                   if (!ehNomePpi(atual.nome) && ehNomePpi(nome))
-                    return { ...atual, nome, faixa_inicial: 1001, faixa_final: null }
+                    return { ...atual, nome, faixa_inicial: 5001, faixa_final: null }
                   return { ...atual, nome }
                 })
               }}
