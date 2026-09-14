@@ -337,7 +337,25 @@ export function ProjetosListar() {
       <Card>
         <CardContent className="relative">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-9">
-            <FiltroTexto rotulo="Código" valor={filtros.codigo} aoMudar={(v) => mudarFiltro("codigo", v)} />
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">Status</Label>
+              <Select
+                value={filtros.status || TODOS}
+                onValueChange={(v) => mudarFiltro("status", v === TODOS ? "" : (v as StatusProjeto))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODOS}>Todos</SelectItem>
+                  {Object.entries(ROTULOS_STATUS).map(([valor, rotulo]) => (
+                    <SelectItem key={valor} value={valor}>
+                      {rotulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <FiltroSelect
               rotulo="Cliente"
               valor={filtros.cliente}
@@ -360,6 +378,12 @@ export function ProjetosListar() {
               aoMudar={(v) => mudarFiltro("operadora", v)}
               opcoes={(operadoras.data ?? []).map((o) => o.nome)}
             />
+            <FiltroSelect
+              rotulo="Tipo"
+              valor={filtros.tipo}
+              aoMudar={(v) => mudarFiltro("tipo", v)}
+              opcoes={(tipos.data ?? []).map((t) => t.nome)}
+            />
             <FiltroTexto rotulo="Cidade" valor={filtros.cidade} aoMudar={(v) => mudarFiltro("cidade", v)} />
             <FiltroTexto
               rotulo="UF"
@@ -367,31 +391,6 @@ export function ProjetosListar() {
               aoMudar={(v) => mudarFiltro("uf", v.toUpperCase())}
               tamanhoMaximo={2}
             />
-            <FiltroSelect
-              rotulo="Tipo"
-              valor={filtros.tipo}
-              aoMudar={(v) => mudarFiltro("tipo", v)}
-              opcoes={(tipos.data ?? []).map((t) => t.nome)}
-            />
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">Status</Label>
-              <Select
-                value={filtros.status || TODOS}
-                onValueChange={(v) => mudarFiltro("status", v === TODOS ? "" : (v as StatusProjeto))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODOS}>Todos</SelectItem>
-                  {Object.entries(ROTULOS_STATUS).map(([valor, rotulo]) => (
-                    <SelectItem key={valor} value={valor}>
-                      {rotulo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           {!semFiltros ? (
             <Button
