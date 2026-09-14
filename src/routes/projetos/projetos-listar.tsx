@@ -147,9 +147,9 @@ function colunasOperacionais(): ColumnDef<LinhaProjeto>[] {
       },
     },
     colunaTexto((l) => l.cliente, "Cliente"),
-    colunaTexto((l) => l.identificador_cliente, "Ident. cliente"),
+    colunaTexto((l) => l.identificador_cliente, "ID. cliente"),
+    colunaTexto((l) => l.identificador_operadora, "ID. operadora"),
     colunaTexto((l) => l.operadora, "Operadora"),
-    colunaTexto((l) => l.identificador_operadora, "Ident. operadora"),
     colunaTexto((l) => l.tipo_projeto, "Tipo"),
     colunaTexto((l) => l.cidade, "Cidade"),
     colunaTexto((l) => l.uf, "UF"),
@@ -176,9 +176,9 @@ function colunasAdministrativas(): ColumnDef<LinhaProjeto>[] {
       },
     },
     colunaTexto((l) => l.cliente, "Cliente"),
-    colunaTexto((l) => l.identificador_cliente, "Ident. cliente"),
+    colunaTexto((l) => l.identificador_cliente, "ID. cliente"),
+    colunaTexto((l) => l.identificador_operadora, "ID. operadora"),
     colunaTexto((l) => l.operadora, "Operadora"),
-    colunaTexto((l) => l.identificador_operadora, "Ident. operadora"),
     colunaTexto((l) => l.tipo_projeto, "Tipo"),
     colunaTexto((l) => l.cidade, "Cidade"),
     colunaTexto((l) => l.uf, "UF"),
@@ -222,14 +222,14 @@ function exportarConsulta(
   const colunas =
     perfil === "ADM"
       ? [
-          "Código", "Status", "Cliente", "Identificador cliente", "Operadora",
-          "Identificador operadora", "Tipo", "Cidade", "UF", "Data de envio",
+          "Código", "Status", "Cliente", "ID cliente", "ID operadora",
+          "Operadora", "Tipo", "Cidade", "UF", "Data de envio",
           "Valor do projeto", "OC", "Data OC", "Centro de custo", "Nota fiscal", "Data de emissão",
           "Valor da nota", "Valor recebido", "Saldo a receber", "Previsão de recebimento",
         ]
       : [
-          "Código", "Status", "Cliente", "Identificador cliente", "Operadora",
-          "Identificador operadora", "Tipo", "Cidade", "UF", "Data de envio",
+          "Código", "Status", "Cliente", "ID cliente", "ID operadora",
+          "Operadora","Tipo", "Cidade", "UF", "Data de envio",
         ]
   const conteudo = linhas.map((linha) =>
     perfil === "ADM"
@@ -246,7 +246,7 @@ function exportarConsulta(
 function linhaToCsvOper(l: ProjetoOperacional): string[] {
   return [
     l.codigo_pasta ?? "", ROTULOS_STATUS[l.status ?? "CADASTRADO"], l.cliente ?? "",
-    l.identificador_cliente ?? "", l.operadora ?? "", l.identificador_operadora ?? "",
+    l.identificador_cliente ?? "", l.identificador_operadora ?? "", l.operadora ?? "",
     l.tipo_projeto ?? "", l.cidade ?? "", l.uf ?? "", formatarData(l.data_envio),
   ]
 }
@@ -345,20 +345,20 @@ export function ProjetosListar() {
               opcoes={(clientes.data ?? []).map((c) => c.nome)}
             />
             <FiltroTexto
-              rotulo="Ident. cliente"
+              rotulo="ID. cliente"
               valor={filtros.identificadorCliente}
               aoMudar={(v) => mudarFiltro("identificadorCliente", v)}
+            />
+            <FiltroTexto
+              rotulo="ID. operadora"
+              valor={filtros.identificadorOperadora}
+              aoMudar={(v) => mudarFiltro("identificadorOperadora", v)}
             />
             <FiltroSelect
               rotulo="Operadora"
               valor={filtros.operadora}
               aoMudar={(v) => mudarFiltro("operadora", v)}
               opcoes={(operadoras.data ?? []).map((o) => o.nome)}
-            />
-            <FiltroTexto
-              rotulo="Ident. operadora"
-              valor={filtros.identificadorOperadora}
-              aoMudar={(v) => mudarFiltro("identificadorOperadora", v)}
             />
             <FiltroTexto rotulo="Cidade" valor={filtros.cidade} aoMudar={(v) => mudarFiltro("cidade", v)} />
             <FiltroTexto
