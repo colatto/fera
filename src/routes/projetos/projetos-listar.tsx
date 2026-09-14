@@ -391,6 +391,24 @@ export function ProjetosListar() {
               aoMudar={(v) => mudarFiltro("uf", v.toUpperCase())}
               tamanhoMaximo={2}
             />
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">Compatibilizados</Label>
+              <Select
+                value={filtros.compatibilizado === "" ? TODOS : String(filtros.compatibilizado)}
+                onValueChange={(v) =>
+                  mudarFiltro("compatibilizado", v === TODOS ? "" : v === "true")
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODOS}>Todos</SelectItem>
+                  <SelectItem value="true">Sim</SelectItem>
+                  <SelectItem value="false">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {!semFiltros ? (
             <Button

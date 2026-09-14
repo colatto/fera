@@ -14,7 +14,6 @@ const vOperacional = "v_projetos_operacional" as const
 
 // Filtros combináveis (spec consulta-projetos): aplicados em conjunto no servidor.
 export interface FiltrosProjetos {
-  codigo: string
   cliente: string
   identificadorCliente: string
   operadora: string
@@ -23,10 +22,10 @@ export interface FiltrosProjetos {
   uf: string
   tipo: string
   status: StatusProjeto | ""
+  compatibilizado: boolean | ""
 }
 
 export const filtrosVazios: FiltrosProjetos = {
-  codigo: "",
   cliente: "",
   identificadorCliente: "",
   operadora: "",
@@ -35,6 +34,7 @@ export const filtrosVazios: FiltrosProjetos = {
   uf: "",
   tipo: "",
   status: "",
+  compatibilizado: "",
 }
 
 export function filtrosAtivos(filtros: FiltrosProjetos): boolean {
@@ -48,7 +48,6 @@ function montarConsulta(perfil: Perfil, filtros: FiltrosProjetos) {
     .order("criado_em", { ascending: false })
 
   let q = consulta
-  if (filtros.codigo) q = q.ilike("codigo_pasta", `%${filtros.codigo.trim()}%`)
   if (filtros.cliente) q = q.eq("cliente", filtros.cliente)
   if (filtros.identificadorCliente)
     q = q.ilike("identificador_cliente", `%${filtros.identificadorCliente.trim()}%`)
@@ -59,6 +58,8 @@ function montarConsulta(perfil: Perfil, filtros: FiltrosProjetos) {
   if (filtros.uf) q = q.eq("uf", filtros.uf.trim().toUpperCase())
   if (filtros.tipo) q = q.eq("tipo_projeto", filtros.tipo)
   if (filtros.status) q = q.eq("status", filtros.status)
+  if (filtros.compatibilizado !== "")
+    q = q.eq("fundacao_compatibilizada", filtros.compatibilizado)
   return q
 }
 
