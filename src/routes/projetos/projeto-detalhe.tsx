@@ -579,7 +579,7 @@ function DialogLote({
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Confirmar recebimentos em lote</DialogTitle>
           <DialogDescription>
@@ -588,14 +588,14 @@ function DialogLote({
         </DialogHeader>
         <div className="flex flex-col gap-3">
           {linhas.map((linha, indice) => (
-            <div key={indice} className="grid grid-cols-[1fr_auto_auto_auto] items-end gap-2">
-              <div className="flex flex-col gap-1">
+            <div key={indice} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-end gap-2">
+              <div className="flex min-w-0 flex-col gap-1">
                 <Label className="text-xs">Nota (projeto)</Label>
                 <Select
                   value={linha.notaFiscalId}
                   onValueChange={(v) => mudarLinha(indice, { notaFiscalId: v })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
