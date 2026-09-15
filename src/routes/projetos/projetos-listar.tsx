@@ -10,6 +10,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, FunnelX } from "lucide-react"
+import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Carregando, ErroDeConsulta, Vazio } from "@/components/estados"
+import { DialogLote } from "@/routes/projetos/dialog-lote"
 import { useQuery } from "@tanstack/react-query"
 import type { SessaoAtual } from "@/lib/auth"
 import { CORES_STATUS, ROTULOS_STATUS, type StatusProjeto } from "@/lib/constantes"
@@ -274,11 +276,27 @@ export function ProjetosListar() {
   const [filtros, setFiltros] = useState<FiltrosProjetos>(filtrosVazios)
   const filtrosAplicados = useDebounce(filtros, 300)
   const [ordenacao, setOrdenacao] = useState<SortingState>([])
+  const [loteAberto, setLoteAberto] = useState(false)
 
   const consulta = useQuery({
     queryKey: chavesProjetos.lista(usuario.perfil, filtrosAplicados),
     queryFn: () => listarProjetos(usuario.perfil, filtrosAplicados),
   })
+
+  // Mesma chave da tabela sem filtros: a consulta nasce em cache e a
+  // invalidação por ["projetos"] a mantém coerente após um lote confirmado.
+  const consultaLote = useQuery({
+    queryKey: chavesProjetos.lista("ADM", filtrosVazios),
+    queryFn: () => listarProjetos("ADM", filtrosVazios),
+    enabled: ehAdm,
+  })
+  const notasDisponiveis = useMemo(
+    () =>
+      (consultaLote.data ?? []).filter(
+        (p) => p.nota_fiscal_id !== null && (p.saldo_receber ?? 0) > 0,
+      ),
+    [consultaLote.data],
+  )
 
   const clientes = useQuery({ queryKey: chavesCadastros.clientes(), queryFn: listarClientes })
   const operadoras = useQuery({ queryKey: chavesCadastros.operadoras(), queryFn: listarOperadoras })
@@ -305,6 +323,15 @@ export function ProjetosListar() {
     setFiltros((atual) => ({ ...atual, [campo]: valor }))
   }
 
+  function aoClicarLote() {
+    // Consulta pendente abre o diálogo: avisar sem dados seria falso negativo.
+    if (!consultaLote.isPending && notasDisponiveis.length === 0) {
+      toast.warning("Nenhuma nota pendente de recebimento")
+      return
+    }
+    setLoteAberto(true)
+  }
+
   const semFiltros = !filtrosAtivos(filtrosAplicados)
 
   return (
@@ -317,6 +344,11 @@ export function ProjetosListar() {
           </p>
         </div>
         <div className="flex gap-2">
+          {ehAdm ? (
+            <Button variant="secondary" size="sm" onClick={aoClicarLote}>
+              Lote de recebimentos
+            </Button>
+          ) : null}
           <Button
             variant="outline"
             size="sm"
@@ -508,6 +540,14 @@ export function ProjetosListar() {
           </CardContent>
         </Card>
       )}
+
+      {ehAdm ? (
+        <DialogLote
+          aberto={loteAberto}
+          aoFechar={() => setLoteAberto(false)}
+          notasDisponiveis={notasDisponiveis}
+        />
+      ) : null}
     </div>
   )
 }

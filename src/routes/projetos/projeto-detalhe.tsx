@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { Link, useParams, useRouteLoaderData } from "react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -44,7 +44,6 @@ import { dataLocalHoje, formatarData, formatarDataHora, formatarMoeda, mensagemD
 import {
   autorizarFaturamento,
   cancelarProjeto,
-  confirmarRecebimentosLote,
   definirCompatibilizacaoFundacao,
   enviarProjeto,
   registrarNotaFiscal,
@@ -52,14 +51,11 @@ import {
   registrarRecebimento,
   vincularOrdemCompra,
   useAcaoFluxo,
-  type ItemRecebimentoLote,
 } from "@/queries/fluxo"
 import {
   chavesProjetos,
-  filtrosVazios,
   listarEventos,
   listarOrdensCompra,
-  listarProjetos,
   obterDocumentosAdm,
   obterProjeto,
   type DocumentosAdm,
@@ -515,150 +511,6 @@ function DialogRecebimento({
   )
 }
 
-interface LinhaLote {
-  notaFiscalId: string
-  data: string
-  valor: string
-}
-
-function DialogLote({
-  aberto,
-  aoFechar,
-}: {
-  aberto: boolean
-  aoFechar: () => void
-}) {
-  const [linhas, setLinhas] = useState<LinhaLote[]>([])
-
-  const mutacao = useAcaoFluxo((itens: ItemRecebimentoLote[]) =>
-    confirmarRecebimentosLote(itens),
-  )
-
-  // Projetos com nota emitida e saldo em aberto (projeção ADM) alimentam o lote.
-  const projetos = useQuery({
-    queryKey: chavesProjetos.lista("ADM", filtrosVazios),
-    queryFn: () => listarProjetos("ADM", filtrosVazios),
-    enabled: aberto,
-  })
-
-  const notasDisponiveis = useMemo(
-    () =>
-      ((projetos.data ?? []) as ProjetoAdministrativo[]).filter(
-        (p) => p.nota_fiscal_id !== null && (p.saldo_receber ?? 0) > 0,
-      ),
-    [projetos.data],
-  )
-
-  function adicionarLinha() {
-    setLinhas((atual) => [...atual, { notaFiscalId: "", data: dataLocalHoje(), valor: "" }])
-  }
-
-  function mudarLinha(indice: number, campos: Partial<LinhaLote>) {
-    setLinhas((atual) =>
-      atual.map((linha, i) => (i === indice ? { ...linha, ...campos } : linha)),
-    )
-  }
-
-  async function submeter() {
-    const itens: ItemRecebimentoLote[] = linhas.map((linha) => ({
-      nota_fiscal_id: Number(linha.notaFiscalId),
-      data_recebimento: linha.data,
-      valor_recebido: Number(linha.valor.replace(",", ".")),
-    }))
-    try {
-      await mutacao.mutateAsync(itens)
-      toast.success("Recebimentos do lote confirmados.")
-      aoFechar()
-    } catch (erro) {
-      // Falha integral (spec fluxo-projetos): nada é aplicado.
-      toast.error(`Lote não aplicado: ${mensagemDeErro(erro)}`)
-    }
-  }
-
-  const valido = linhas.every(
-    (linha) =>
-      linha.notaFiscalId !== "" &&
-      linha.data !== "" &&
-      Number(linha.valor.replace(",", ".")) > 0,
-  )
-
-  return (
-    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Confirmar recebimentos em lote</DialogTitle>
-          <DialogDescription>
-            Operação transacional: se qualquer item falhar, nenhum recebimento é aplicado.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
-          {linhas.map((linha, indice) => (
-            <div key={indice} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-end gap-2">
-              <div className="flex min-w-0 flex-col gap-1">
-                <Label className="text-xs">Nota (projeto)</Label>
-                <Select
-                  value={linha.notaFiscalId}
-                  onValueChange={(v) => mudarLinha(indice, { notaFiscalId: v })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {notasDisponiveis.map((p) => (
-                      <SelectItem key={p.nota_fiscal_id} value={String(p.nota_fiscal_id)}>
-                        {p.codigo_pasta} — nota {p.numero_nota_fiscal} — saldo{" "}
-                        {formatarMoeda(p.saldo_receber)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs">Data</Label>
-                <Input
-                  type="date"
-                  value={linha.data}
-                  onChange={(e) => mudarLinha(indice, { data: e.target.value })}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs">Valor</Label>
-                <Input
-                  inputMode="decimal"
-                  value={linha.valor}
-                  onChange={(e) => mudarLinha(indice, { valor: e.target.value })}
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Remover item"
-                onClick={() => setLinhas((atual) => atual.filter((_, i) => i !== indice))}
-              >
-                ✕
-              </Button>
-            </div>
-          ))}
-          <Button variant="outline" size="sm" className="self-start" onClick={adicionarLinha}>
-            Adicionar item
-          </Button>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={aoFechar}>
-            Voltar
-          </Button>
-          <Button
-            disabled={linhas.length === 0 || !valido || mutacao.isPending}
-            onClick={() => void submeter()}
-          >
-            Confirmar lote
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export function ProjetoDetalhe() {
   const parametros = useParams()
   const id = Number(parametros.id)
@@ -669,7 +521,6 @@ export function ProjetoDetalhe() {
   const [ocAberta, setOcAberta] = useState(false)
   const [notaAberta, setNotaAberta] = useState(false)
   const [recebimentoAberto, setRecebimentoAberto] = useState(false)
-  const [loteAberto, setLoteAberto] = useState(false)
 
   const projeto = useQuery({
     queryKey: chavesProjetos.detalhe(usuario.perfil, id),
@@ -788,14 +639,9 @@ export function ProjetoDetalhe() {
               </Button>
             ) : null}
             {ehAdm && status === "NOTA_EMITIDA" ? (
-              <>
-                <Button size="sm" variant="secondary" onClick={() => setRecebimentoAberto(true)}>
-                  Registrar recebimento
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => setLoteAberto(true)}>
-                  Lote de recebimentos
-                </Button>
-              </>
+              <Button size="sm" variant="secondary" onClick={() => setRecebimentoAberto(true)}>
+                Registrar recebimento
+              </Button>
             ) : null}
           </div>
         ) : (
@@ -926,7 +772,6 @@ export function ProjetoDetalhe() {
               saldo={adm.saldo_receber ?? 0}
             />
           ) : null}
-          <DialogLote aberto={loteAberto} aoFechar={() => setLoteAberto(false)} />
         </>
       ) : null}
     </div>
