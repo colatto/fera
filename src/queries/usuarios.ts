@@ -5,11 +5,13 @@ import { supabase } from "@/lib/supabase"
 export type UsuarioManutencao = Tables<"v_usuarios_manutencao">
 
 // Listagem de manutenção (ADM): ativos e inativos com perfil, nome e e-mail
-// (spec administracao-usuarios). Fonte: v_usuarios_manutencao.
+// (spec administracao-usuarios). Fonte: v_usuarios_manutencao. Ativos primeiro,
+// alfabético por nome dentro de cada grupo.
 export async function listarUsuariosManutencao(): Promise<UsuarioManutencao[]> {
   const { data, error } = await supabase
     .from("v_usuarios_manutencao")
     .select("*")
+    .order("ativo", { ascending: false })
     .order("nome")
   if (error) throw error
   return (data ?? []) as UsuarioManutencao[]

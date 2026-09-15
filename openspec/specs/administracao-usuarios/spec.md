@@ -5,11 +5,15 @@ Define a interface de administração de usuários pelo ADM — criação, alter
 ## Requirements
 
 ### Requirement: Listagem de manutenção
-A interface MUST oferecer ao ADM a listagem de usuários conforme `v_usuarios_manutencao`, com ativos e inativos, perfil, nome e e-mail; a tela MUST ser exclusiva da navegação de ADM.
+A interface MUST oferecer ao ADM a listagem de usuários conforme `v_usuarios_manutencao`, com ativos e inativos, perfil, nome e e-mail; a tela MUST ser exclusiva da navegação de ADM. A listagem MUST ordenar os usuários com os ativos antes dos inativos e, dentro de cada grupo, em ordem alfabética por nome.
 
 #### Scenario: ADM lista usuários
 - **WHEN** o ADM abre a administração de usuários
 - **THEN** retornam usuários ativos e inativos com perfil, nome e e-mail
+
+#### Scenario: Ordenação por situação
+- **WHEN** a listagem é exibida
+- **THEN** todos os usuários ativos aparecem antes dos inativos e, dentro de cada grupo, em ordem alfabética por nome
 
 ### Requirement: Criação de usuário com senha inicial
 A interface MUST permitir ao ADM criar usuário informando perfil (`ADM`/`OPER`), nome, e-mail e senha inicial de no mínimo 6 caracteres, enviando a ação `criar`; a senha inicial transita somente na chamada autenticada da Edge Function e a interface MUST NOT retê-la após a operação. Erros retornados — e-mail duplicado, validação — MUST ser exibidos com a mensagem da função.
@@ -34,7 +38,7 @@ A interface MUST permitir ao ADM alterar perfil, nome e e-mail de um usuário pe
 - **THEN** a função nega a operação e a interface exibe o motivo, mantendo o perfil `ADM`
 
 ### Requirement: Inativação e reativação
-A interface MUST permitir ao ADM inativar e reativar usuários pelas ações `inativar` e `reativar`; a inativação revoga imediatamente as sessões do usuário-alvo, e a negação da salvaguarda de último ADM ativo MUST ser exibida sem efeito.
+A interface MUST permitir ao ADM inativar e reativar usuários pelas ações `inativar` e `reativar`; a inativação revoga imediatamente as sessões do usuário-alvo, e a negação da salvaguarda de último ADM ativo MUST ser exibida sem efeito. A interface MUST oferecer essas ações somente a partir da modal de edição do usuário, cujo rótulo varia conforme o status atual (`Inativar` para ativo, `Reativar` para inativo) e que executa em um clique, sem etapa adicional de confirmação; a tabela MUST exibir apenas a ação `Editar`. Após a ação, a modal MUST refletir o status atualizado sem exigir fechamento e reabertura.
 
 #### Scenario: Inativação derruba sessão
 - **WHEN** o ADM inativa um usuário autenticado
@@ -44,8 +48,16 @@ A interface MUST permitir ao ADM inativar e reativar usuários pelas ações `in
 - **WHEN** o ADM inativa a si mesmo sendo o único ADM ativo
 - **THEN** a função nega a operação e a interface exibe o motivo, mantendo-o ativo
 
+#### Scenario: Ações concentradas na edição
+- **WHEN** o ADM visualiza a coluna Ações da listagem
+- **THEN** apenas a ação `Editar` é exibida, e as ações de inativação e reativação são oferecidas somente dentro da modal de edição do usuário
+
+#### Scenario: Modal reflete status após ação
+- **WHEN** o ADM inativa ou reativa o usuário a partir da modal de edição
+- **THEN** a modal passa a refletir o status atualizado sem exigir fechamento e reabertura
+
 ### Requirement: Redefinição de senha pelo ADM
-A interface MUST permitir ao ADM redefinir a senha de qualquer usuário pela ação `redefinir_senha`, informando a nova senha com no mínimo 6 caracteres; a redefinição revoga as sessões do usuário-alvo e não restaura o acesso de usuário inativo. A interface MUST usar exclusivamente a sessão ADM autenticada — a credencial de serviço MUST NOT existir no cliente.
+A interface MUST permitir ao ADM redefinir a senha de qualquer usuário pela ação `redefinir_senha`, informando a nova senha com no mínimo 6 caracteres; a redefinição revoga as sessões do usuário-alvo e não restaura o acesso de usuário inativo. A interface MUST oferecer a redefinição a partir da modal de edição do usuário, que revela o campo de nova senha na própria modal para confirmar a operação. A interface MUST usar exclusivamente a sessão ADM autenticada — a credencial de serviço MUST NOT existir no cliente.
 
 #### Scenario: Redefinição em usuário ativo
 - **WHEN** o ADM redefine a senha de um usuário ativo
@@ -54,6 +66,10 @@ A interface MUST permitir ao ADM redefinir a senha de qualquer usuário pela aç
 #### Scenario: Redefinição não reativa inativo
 - **WHEN** o ADM redefine a senha de um usuário inativo
 - **THEN** a senha nova é gravada e o usuário continua sem acessar enquanto estiver inativo
+
+#### Scenario: Redefinição a partir da edição
+- **WHEN** o ADM aciona `Redefinir senha` na modal de edição
+- **THEN** o campo de nova senha é revelado na própria modal para confirmar a operação
 
 ### Requirement: Troca da própria senha
 A interface MUST permitir ao usuário autenticado ativo alterar a própria senha pelo Supabase Auth, informando a credencial atual; a troca MUST NOT alterar perfil, nome, e-mail ou status em `public.usuario`, e a recusa por credencial atual não comprovada MUST ser exibida.
