@@ -40,7 +40,7 @@ import {
   ROTULOS_STATUS,
   type StatusProjeto,
 } from "@/lib/constantes"
-import { formatarData, formatarDataHora, formatarMoeda, mensagemDeErro } from "@/lib/formato"
+import { dataLocalHoje, formatarData, formatarDataHora, formatarMoeda, mensagemDeErro } from "@/lib/formato"
 import {
   autorizarFaturamento,
   cancelarProjeto,
@@ -68,9 +68,8 @@ import {
 } from "@/queries/projetos"
 import { chavesUsuarios, listarNomesUsuarios } from "@/queries/usuarios"
 
-const HOJE = () => new Date().toISOString().slice(0, 10)
-
-// Datas puras (date) ganham meio-dia para ordenar estável na linha do tempo.
+// Datas puras (date) ganham meio-dia como âncora neutra entre itens com hora:
+// usado apenas na previsão de recebimento — documentos usam o instante real.
 const aoMeioDia = (data: string) => `${data}T12:00:00`
 
 // Humaniza `detalhes` por tipo de evento; o default é omitir, nunca serializar JSON.
@@ -106,13 +105,19 @@ function montarItensAdm(
     detentor: nomes[evento.realizado_por ?? ""],
   }))
 
+  // A OC é posicionada pelo momento do vínculo (design D1): instantes reais
+  // mantêm o fluxo natural mesmo com data de emissão retroativa. Sem o evento
+  // (não deve ocorrer), o fallback D3 preserva o item com a âncora antiga.
+  const eventoOc = eventos.find(
+    (evento) => evento.tipo === "ALTERACAO_STATUS" && evento.status_novo === "OC_REGISTRADA",
+  )
   if (projeto.numero_oc) {
     itens.push({
       id: "doc-oc",
-      quando: aoMeioDia(projeto.data_oc ?? ""),
+      quando: eventoOc?.realizado_em ?? aoMeioDia(projeto.data_oc ?? ""),
       tipo: "documento",
       titulo: "Ordem de compra",
-      descricao: `OC ${projeto.numero_oc}${projeto.centro_custo ? ` — centro de custo ${projeto.centro_custo}` : ""}`,
+      descricao: `OC ${projeto.numero_oc} de ${formatarData(projeto.data_oc)}${projeto.centro_custo ? ` — centro de custo ${projeto.centro_custo}` : ""}`,
     })
   }
   if (documentos.autorizadoEm) {
@@ -126,10 +131,10 @@ function montarItensAdm(
   if (documentos.nota) {
     itens.push({
       id: "doc-nota",
-      quando: aoMeioDia(documentos.nota.dataEmissao),
+      quando: documentos.nota.registradoEm,
       tipo: "documento",
       titulo: `Nota fiscal ${documentos.nota.numero}`,
-      descricao: `Valor ${formatarMoeda(documentos.nota.valor)}`,
+      descricao: `Emissão ${formatarData(documentos.nota.dataEmissao)} — Valor ${formatarMoeda(documentos.nota.valor)}`,
     })
     if (projeto.previsao_recebimento) {
       itens.push({
@@ -144,10 +149,10 @@ function montarItensAdm(
   for (const recebimento of documentos.recebimentos) {
     itens.push({
       id: `doc-r${recebimento.id}`,
-      quando: aoMeioDia(recebimento.dataRecebimento),
+      quando: recebimento.confirmadoEm,
       tipo: "documento",
       titulo: "Recebimento",
-      descricao: `Valor ${formatarMoeda(recebimento.valorRecebido)}`,
+      descricao: `Data do recebimento ${formatarData(recebimento.dataRecebimento)} — Valor ${formatarMoeda(recebimento.valorRecebido)}`,
     })
   }
   return itens
@@ -243,7 +248,7 @@ function DialogOrdemCompra({
   const [modo, setModo] = useState<"vincular" | "nova">("vincular")
   const [ocId, setOcId] = useState<string>("")
   const [numero, setNumero] = useState("")
-  const [data, setData] = useState(HOJE())
+  const [data, setData] = useState(dataLocalHoje())
   const [centro, setCentro] = useState("")
   const queryClient = useQueryClient()
   // Marcado dentro do mutationFn quando registrar_ordem_compra já sucedeu:
@@ -383,7 +388,7 @@ function DialogNotaFiscal({
   valorProjeto: number | null
 }) {
   const [numero, setNumero] = useState("")
-  const [data, setData] = useState(HOJE())
+  const [data, setData] = useState(dataLocalHoje())
   // A nota é pelo valor do projeto: derivado no banco (spec fluxo-projetos),
   // aqui apenas exibido como somente leitura.
   const mutacao = useAcaoFluxo((vars: { numero: string; data: string }) =>
@@ -452,7 +457,7 @@ function DialogRecebimento({
   notaId: number
   saldo: number
 }) {
-  const [data, setData] = useState(HOJE())
+  const [data, setData] = useState(dataLocalHoje())
   const [valor, setValor] = useState("")
   const mutacao = useAcaoFluxo(
     (vars: { data: string; valor: number }) => registrarRecebimento(notaId, vars.data, vars.valor),
@@ -545,7 +550,7 @@ function DialogLote({
   )
 
   function adicionarLinha() {
-    setLinhas((atual) => [...atual, { notaFiscalId: "", data: HOJE(), valor: "" }])
+    setLinhas((atual) => [...atual, { notaFiscalId: "", data: dataLocalHoje(), valor: "" }])
   }
 
   function mudarLinha(indice: number, campos: Partial<LinhaLote>) {
@@ -685,12 +690,11 @@ export function ProjetoDetalhe() {
     enabled: ehAdm,
   })
 
-  const mutacaoEnviar = useAcaoFluxo(() => enviarProjeto(id), id)
-  const mutacaoFundacao = useAcaoFluxo(
-    ({ marcada }: { marcada: boolean }) => definirCompatibilizacaoFundacao(id, marcada),
-    id,
+  const mutacaoEnviar = useAcaoFluxo(() => enviarProjeto(id))
+  const mutacaoFundacao = useAcaoFluxo(({ marcada }: { marcada: boolean }) =>
+    definirCompatibilizacaoFundacao(id, marcada),
   )
-  const mutacaoAutorizar = useAcaoFluxo(() => autorizarFaturamento(id), id)
+  const mutacaoAutorizar = useAcaoFluxo(() => autorizarFaturamento(id))
 
   if (projeto.isPending || eventos.isPending) {
     return <Carregando descricao="Carregando projeto…" />

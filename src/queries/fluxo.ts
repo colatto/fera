@@ -8,17 +8,17 @@ import { supabase } from "@/lib/supabase"
 // confirmação da RPC — o erro do banco é exibido e o estado anterior preservado.
 
 // Invalidação pós-confirmação (design D4): listas, detalhe, eventos, documentos
-// e dashboards — cada ação reflete imediatamente em status, linha do tempo e painéis.
+// e dashboards — cada ação reflete imediatamente em status, linha do tempo e
+// painéis. Eventos/documentos são invalidados por prefixo (design D6): os
+// diálogos do fluxo não conhecem o projetoId, e a linha do tempo precisa do
+// evento novo na hora (spec fluxo-projetos).
 export function invalidarAposFluxo(
   queryClient: ReturnType<typeof useQueryClient>,
-  projetoId?: number,
 ): void {
   void queryClient.invalidateQueries({ queryKey: ["projetos"] })
   void queryClient.invalidateQueries({ queryKey: ["projeto"] })
-  if (projetoId !== undefined) {
-    void queryClient.invalidateQueries({ queryKey: ["eventos", projetoId] })
-    void queryClient.invalidateQueries({ queryKey: ["documentos", projetoId] })
-  }
+  void queryClient.invalidateQueries({ queryKey: ["eventos"] })
+  void queryClient.invalidateQueries({ queryKey: ["documentos"] })
   void queryClient.invalidateQueries({ queryKey: ["dashboards"] })
   void queryClient.invalidateQueries({ queryKey: ["ordens-compra"] })
 }
@@ -26,12 +26,11 @@ export function invalidarAposFluxo(
 // Hook comum: mutation sem aplicação otimista que invalida o cache após o sucesso.
 export function useAcaoFluxo<TVariaveis>(
   acao: (variaveis: TVariaveis) => Promise<unknown>,
-  projetoId?: number,
 ): UseMutationResult<unknown, Error, TVariaveis> {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: acao,
-    onSuccess: () => invalidarAposFluxo(queryClient, projetoId),
+    onSuccess: () => invalidarAposFluxo(queryClient),
   })
 }
 

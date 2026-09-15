@@ -17,17 +17,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Carregando, ErroDeConsulta } from "@/components/estados"
 import { ROTULOS_STATUS, type StatusProjeto } from "@/lib/constantes"
-import { formatarNumero } from "@/lib/formato"
+import { dataLocal, dataLocalHoje, formatarNumero } from "@/lib/formato"
 import {
   chavesDashboards,
   obterDashboardOperacional,
 } from "@/queries/dashboards"
 
-const hoje = () => new Date().toISOString().slice(0, 10)
+const hoje = dataLocalHoje
 const mesesAtras = (meses: number) => {
   const data = new Date()
   data.setMonth(data.getMonth() - meses)
-  return data.toISOString().slice(0, 10)
+  return dataLocal(data)
 }
 
 const CORES_GRAFICO: Record<string, string> = {

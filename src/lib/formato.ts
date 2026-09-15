@@ -1,5 +1,15 @@
 // Formatação pt-BR (design D10): datas e moeda com Intl, fuso do usuário.
 
+// Data no fuso local em YYYY-MM-DD: composta a partir de partes locais —
+// toISOString é UTC e desloca um dia entre 21h e meia-noite no fuso brasileiro.
+export function dataLocal(data: Date): string {
+  const mes = String(data.getMonth() + 1).padStart(2, "0")
+  const dia = String(data.getDate()).padStart(2, "0")
+  return `${data.getFullYear()}-${mes}-${dia}`
+}
+
+export const dataLocalHoje = (): string => dataLocal(new Date())
+
 export function formatarData(valor: string | null | undefined): string {
   if (!valor) return "—"
   const data = new Date(valor.length === 10 ? `${valor}T12:00:00` : valor)

@@ -34,7 +34,7 @@ import { Carregando, ErroDeConsulta, Vazio } from "@/components/estados"
 import { useQuery } from "@tanstack/react-query"
 import type { SessaoAtual } from "@/lib/auth"
 import { CORES_STATUS, ROTULOS_STATUS, type StatusProjeto } from "@/lib/constantes"
-import { baixarCsv, formatarData, formatarMoeda } from "@/lib/formato"
+import { baixarCsv, dataLocalHoje, formatarData, formatarMoeda } from "@/lib/formato"
 import {
   chavesProjetos,
   filtrosAtivos,
@@ -237,7 +237,7 @@ function exportarConsulta(
       : linhaToCsvOper(linha as ProjetoOperacional),
   )
   baixarCsv(
-    `projetos-${new Date().toISOString().slice(0, 10)}.csv`,
+    `projetos-${dataLocalHoje()}.csv`,
     colunas,
     conteudo,
   )

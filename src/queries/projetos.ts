@@ -114,8 +114,19 @@ export async function listarEventos(id: number): Promise<EventoProjeto[]> {
 // (numero_oc/data_oc/centro_custo), pois uma OC atende vários projetos.
 export interface DocumentosAdm {
   autorizadoEm: string | null
-  nota: { id: number; numero: string; dataEmissao: string; valor: number } | null
-  recebimentos: { id: number; dataRecebimento: string; valorRecebido: number }[]
+  nota: {
+    id: number
+    numero: string
+    dataEmissao: string
+    valor: number
+    registradoEm: string
+  } | null
+  recebimentos: {
+    id: number
+    dataRecebimento: string
+    valorRecebido: number
+    confirmadoEm: string
+  }[]
 }
 
 export async function obterDocumentosAdm(projetoId: number): Promise<DocumentosAdm> {
@@ -128,7 +139,7 @@ export async function obterDocumentosAdm(projetoId: number): Promise<DocumentosA
 
   const { data: nota, error: erroNota } = await supabase
     .from("nota_fiscal")
-    .select("id, numero, data_emissao, valor")
+    .select("id, numero, data_emissao, valor, registrado_em")
     .eq("projeto_id", projetoId)
     .maybeSingle()
   if (erroNota) throw erroNota
@@ -137,7 +148,7 @@ export async function obterDocumentosAdm(projetoId: number): Promise<DocumentosA
   if (nota) {
     const { data, error } = await supabase
       .from("recebimento")
-      .select("id, data_recebimento, valor_recebido")
+      .select("id, data_recebimento, valor_recebido, confirmado_em")
       .eq("nota_fiscal_id", nota.id)
       .order("data_recebimento", { ascending: true })
     if (error) throw error
@@ -145,6 +156,7 @@ export async function obterDocumentosAdm(projetoId: number): Promise<DocumentosA
       id: r.id,
       dataRecebimento: r.data_recebimento,
       valorRecebido: r.valor_recebido,
+      confirmadoEm: r.confirmado_em,
     }))
   }
 
@@ -156,6 +168,7 @@ export async function obterDocumentosAdm(projetoId: number): Promise<DocumentosA
           numero: nota.numero,
           dataEmissao: nota.data_emissao,
           valor: nota.valor,
+          registradoEm: nota.registrado_em,
         }
       : null,
     recebimentos,
