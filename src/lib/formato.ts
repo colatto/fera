@@ -36,6 +36,17 @@ export function formatarNumero(valor: number | null | undefined): string {
   return valor.toLocaleString("pt-BR")
 }
 
+// Decimal pt-BR sem agrupamento para pre-fill de input de valor: "6000,50" é
+// consumido direto pelo parsing replace(",", ".") dos diálogos de recebimento.
+export function formatarValorDecimal(valor: number | null | undefined): string {
+  if (valor === null || valor === undefined || !Number.isFinite(valor)) return ""
+  return new Intl.NumberFormat("pt-BR", {
+    useGrouping: false,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(valor)
+}
+
 // Escape CSV: campo entre aspas quando contém ; " ou quebra de linha.
 function escaparCampoCsv(valor: string): string {
   if (/[";\n]/.test(valor)) {

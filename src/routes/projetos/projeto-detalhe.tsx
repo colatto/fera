@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useParams, useRouteLoaderData } from "react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -40,7 +40,7 @@ import {
   ROTULOS_STATUS,
   type StatusProjeto,
 } from "@/lib/constantes"
-import { dataLocalHoje, formatarData, formatarDataHora, formatarMoeda, mensagemDeErro } from "@/lib/formato"
+import { dataLocalHoje, formatarData, formatarDataHora, formatarMoeda, formatarValorDecimal, mensagemDeErro } from "@/lib/formato"
 import {
   autorizarFaturamento,
   cancelarProjeto,
@@ -459,8 +459,19 @@ function DialogRecebimento({
     (vars: { data: string; valor: number }) => registrarRecebimento(notaId, vars.data, vars.valor),
   )
 
+  // O diálogo permanece montado enquanto o projeto tem nota (design D2): o pre-fill
+  // é refeito a cada abertura com o saldo daquele momento. O saldo fica fora das
+  // dependências para não descartar o que o ADM digita se a consulta atualizar.
+  useEffect(() => {
+    if (!aberto) return
+    setData(dataLocalHoje())
+    setValor(formatarValorDecimal(saldo))
+  }, [aberto])
+
   const valorNumerico = Number(valor.replace(",", "."))
-  const valido = data !== "" && valorNumerico > 0
+  const valorPositivo = Number.isFinite(valorNumerico) && valorNumerico > 0
+  const excedeSaldo = valorPositivo && valorNumerico > saldo
+  const valido = data !== "" && valorPositivo && !excedeSaldo
 
   async function submeter() {
     try {
@@ -496,6 +507,13 @@ function DialogRecebimento({
               onChange={(e) => setValor(e.target.value)}
               placeholder="0,00"
             />
+            {excedeSaldo ? (
+              <p className="text-xs text-destructive">
+                O valor excede o saldo de {formatarMoeda(saldo)}
+              </p>
+            ) : valor !== "" && !valorPositivo ? (
+              <p className="text-xs text-destructive">Informe um valor positivo</p>
+            ) : null}
           </div>
         </div>
         <DialogFooter>
