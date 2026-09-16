@@ -39,6 +39,46 @@ const CORES_GRAFICO: Record<string, string> = {
   PAGO: "#34D399",
 }
 
+const COR_LEGENDA_PADRAO = "#E8ECF5"
+
+type EntradaTooltipStatus = {
+  active?: boolean
+  label?: string
+  payload?: {
+    color?: string
+    name?: string
+    value?: number | string
+    payload?: { status?: string }
+  }[]
+}
+
+// Legenda do tooltip na cor do status hoverado (spec painel-dashboards); o
+// recharts não propaga o fill dos <Cell> do Bar para o tooltip.
+function TooltipLegendaStatus({ active, label, payload }: EntradaTooltipStatus) {
+  if (!active || !payload?.length) return null
+  const entrada = payload[0]
+  const cor =
+    CORES_GRAFICO[entrada.payload?.status ?? ""] ?? entrada.color ?? COR_LEGENDA_PADRAO
+  return (
+    <div
+      style={{
+        margin: 0,
+        padding: 10,
+        background: "#232C47",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 8,
+        color: COR_LEGENDA_PADRAO,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {typeof label === "string" && label !== "" ? <p style={{ margin: 0 }}>{label}</p> : null}
+      <div style={{ paddingTop: 4, paddingBottom: 4, color: cor }}>
+        {entrada.name} : {entrada.value}
+      </div>
+    </div>
+  )
+}
+
 // Distribuição completa: status sem ocorrência aparecem zerados (spec painel-dashboards).
 function montarDistribuicao(porStatus: { status: string; quantidade: number }[]) {
   const contagem = new Map(porStatus.map((item) => [item.status, item.quantidade]))
@@ -155,12 +195,7 @@ export function DashboardOperacional() {
                     <YAxis allowDecimals={false} tick={{ fill: "#9DA9C6", fontSize: 11 }} />
                     <Tooltip
                       cursor={{ fill: "rgba(76,141,255,0.08)" }}
-                      contentStyle={{
-                        background: "#232C47",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: 8,
-                        color: "#E8ECF5",
-                      }}
+                      content={<TooltipLegendaStatus />}
                     />
                     <Bar dataKey="quantidade" radius={[4, 4, 0, 0]}>
                       {distribucao.map((entrada) => (
@@ -197,14 +232,7 @@ export function DashboardOperacional() {
                         <Cell key={entrada.status} fill={CORES_GRAFICO[entrada.status]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: "#232C47",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: 8,
-                        color: "#E8ECF5",
-                      }}
-                    />
+                    <Tooltip content={<TooltipLegendaStatus />} />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
