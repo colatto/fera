@@ -25,16 +25,15 @@ export default defineConfig({
       output: {
         // Vendor inicial em grupos estáveis entre deploys (spec
         // carregamento-progressivo: aviso de chunk volta a sinalizar
-        // regressão real). Forma de função: a forma de objeto não é
-        // aceita pelo Rolldown. react + react-dom juntos evitam ciclo de
-        // chunks na inicialização do React.
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return undefined
-          if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return "vendor-supabase"
-          if (/[\\/]node_modules[\\/](react-dom|scheduler)[\\/]/.test(id)) return "vendor-react"
-          if (/[\\/]node_modules[\\/]react[\\/]/.test(id)) return "vendor-react"
-          if (/[\\/]node_modules[\\/]react-router/.test(id)) return "vendor-router"
-          return undefined
+        // regressão real). A primeira correspondência de `test` vence.
+        // react + react-dom + scheduler juntos evitam ciclo de chunks na
+        // inicialização do React.
+        codeSplitting: {
+          groups: [
+            { name: "vendor-supabase", test: /[\\/]node_modules[\\/]@supabase[\\/]/ },
+            { name: "vendor-react", test: /[\\/]node_modules[\\/](react-dom|scheduler|react)[\\/]/ },
+            { name: "vendor-router", test: /[\\/]node_modules[\\/]react-router/ },
+          ],
         },
       },
     },
