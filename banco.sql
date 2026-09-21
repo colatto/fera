@@ -195,6 +195,25 @@ declare i jsonb; begin if jsonb_typeof(p_itens) <> 'array' then raise exception 
 create or replace function public.definir_compatibilizacao_fundacao(p_projeto bigint,p_marcada boolean) returns void language plpgsql security definer set search_path = public, auth as $$
 begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if; update public.projeto set fundacao_compatibilizada=p_marcada,fundacao_compatibilizada_por=case when p_marcada then auth.uid() else null end,fundacao_compatibilizada_em=case when p_marcada then now() else null end where id=p_projeto; if not found then raise exception 'Projeto inexistente'; end if; insert into public.evento_projeto(projeto_id,realizado_por,tipo,detalhes) values(p_projeto,auth.uid(),'COMPATIBILIZACAO_FUNDACAO',jsonb_build_object('marcada',p_marcada)); end; $$;
 
+create or replace function public.editar_identificadores_projeto(p_id bigint, p_identificador_cliente varchar, p_identificador_operadora varchar)
+returns void language plpgsql security definer set search_path = public, auth as $$
+declare
+  v public.projeto%rowtype;
+  v_cliente varchar;
+  v_operadora varchar;
+begin
+  if not public.usuario_adm() then raise exception 'Apenas ADM pode editar identificadores do projeto' using errcode = '42501'; end if;
+  select * into v from public.projeto where id = p_id for update;
+  if not found then raise exception 'Projeto inexistente'; end if;
+  if v.status <> 'CADASTRADO' then raise exception 'A edição de identificadores exige projeto em status CADASTRADO'; end if;
+  v_cliente := btrim(coalesce(p_identificador_cliente, ''));
+  v_operadora := btrim(coalesce(p_identificador_operadora, ''));
+  if v_cliente = '' or v_operadora = '' then raise exception 'Identificadores do cliente e da operadora são obrigatórios'; end if;
+  if v_cliente = v.identificador_cliente and v_operadora = v.identificador_operadora then return; end if;
+  update public.projeto set identificador_cliente = v_cliente, identificador_operadora = v_operadora where id = p_id;
+  insert into public.evento_projeto(projeto_id, realizado_por, tipo) values(p_id, auth.uid(), 'ALTERACAO_CADASTRAL');
+end; $$;
+
 alter table public.usuario enable row level security;
 alter table public.cliente enable row level security;
 alter table public.operadora enable row level security;
@@ -271,4 +290,4 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar),public.dashboard_operacional(date,date) to authenticated;

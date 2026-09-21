@@ -867,6 +867,14 @@ export type Database = {
         Args: { p_marcada: boolean; p_projeto: number }
         Returns: undefined
       }
+      editar_identificadores_projeto: {
+        Args: {
+          p_id: number
+          p_identificador_cliente: string
+          p_identificador_operadora: string
+        }
+        Returns: undefined
+      }
       registrar_nota_fiscal: {
         Args: { p_data: string; p_numero: string; p_projeto: number }
         Returns: number

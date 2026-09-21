@@ -142,5 +142,18 @@ export async function definirCompatibilizacaoFundacao(
   if (error) throw error
 }
 
+export async function editarIdentificadoresProjeto(
+  p_id: number,
+  p_identificador_cliente: string,
+  p_identificador_operadora: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("editar_identificadores_projeto", {
+    p_id,
+    p_identificador_cliente: p_identificador_cliente.trim(),
+    p_identificador_operadora: p_identificador_operadora.trim(),
+  })
+  if (error) throw error
+}
+
 // Tipo auxiliar para o contrato completo das funções públicas (referência).
 export type FuncoesPublicas = Database["public"]["Functions"]

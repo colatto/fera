@@ -45,6 +45,7 @@ import {
   autorizarFaturamento,
   cancelarProjeto,
   definirCompatibilizacaoFundacao,
+  editarIdentificadoresProjeto,
   enviarProjeto,
   registrarNotaFiscal,
   registrarOrdemCompra,
@@ -529,6 +530,92 @@ function DialogRecebimento({
   )
 }
 
+function DialogEditarIdentificadores({
+  aberto,
+  aoFechar,
+  projetoId,
+  identificadorCliente,
+  identificadorOperadora,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  projetoId: number
+  identificadorCliente: string
+  identificadorOperadora: string
+}) {
+  const [cliente, setCliente] = useState(identificadorCliente)
+  const [operadora, setOperadora] = useState(identificadorOperadora)
+  const mutacao = useAcaoFluxo(
+    (vars: { cliente: string; operadora: string }) =>
+      editarIdentificadoresProjeto(projetoId, vars.cliente, vars.operadora),
+  )
+
+  // O diálogo permanece montado enquanto o projeto está em CADASTRADO: o pre-fill é
+  // refeito a cada abertura com os identificadores vigentes do detalhe. Os valores
+  // ficam fora das dependências para não descartar o que o ADM digita se a consulta
+  // do detalhe atualizar (padrão do DialogRecebimento).
+  useEffect(() => {
+    if (!aberto) return
+    setCliente(identificadorCliente)
+    setOperadora(identificadorOperadora)
+  }, [aberto])
+
+  // Validação local antes da RPC (spec fluxo-projetos): trim e não vazio nos dois campos.
+  const valido = cliente.trim() !== "" && operadora.trim() !== ""
+
+  async function submeter() {
+    try {
+      await mutacao.mutateAsync({ cliente: cliente.trim(), operadora: operadora.trim() })
+      toast.success("Identificadores atualizados.")
+      aoFechar()
+    } catch (erro) {
+      toast.error(mensagemDeErro(erro))
+    }
+  }
+
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar identificadores</DialogTitle>
+          <DialogDescription>
+            Corrige apenas os textos dos identificadores — cliente e operadora vinculadas
+            permanecem as mesmas. A alteração fica registrada na linha do tempo.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="editar-ident-cliente">Identificador do cliente</Label>
+            <Input
+              id="editar-ident-cliente"
+              value={cliente}
+              maxLength={100}
+              onChange={(e) => setCliente(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="editar-ident-operadora">Identificador da operadora</Label>
+            <Input
+              id="editar-ident-operadora"
+              value={operadora}
+              maxLength={100}
+              onChange={(e) => setOperadora(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={aoFechar}>
+            Voltar
+          </Button>
+          <Button disabled={!valido || mutacao.isPending} onClick={() => void submeter()}>
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ProjetoDetalhe() {
   const parametros = useParams()
   const id = Number(parametros.id)
@@ -536,6 +623,7 @@ export function ProjetoDetalhe() {
   const ehAdm = usuario.perfil === "ADM"
 
   const [cancelando, setCancelando] = useState(false)
+  const [editando, setEditando] = useState(false)
   const [ocAberta, setOcAberta] = useState(false)
   const [notaAberta, setNotaAberta] = useState(false)
   const [recebimentoAberto, setRecebimentoAberto] = useState(false)
@@ -631,6 +719,11 @@ export function ProjetoDetalhe() {
                 <Button size="sm" disabled={mutacaoEnviar.isPending} onClick={() => void enviar()}>
                   Enviar projeto
                 </Button>
+                {ehAdm ? (
+                  <Button size="sm" variant="secondary" onClick={() => setEditando(true)}>
+                    Editar
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="destructive" onClick={() => setCancelando(true)}>
                   Cancelar projeto
                 </Button>
@@ -775,6 +868,13 @@ export function ProjetoDetalhe() {
       />
       {ehAdm ? (
         <>
+          <DialogEditarIdentificadores
+            aberto={editando}
+            aoFechar={() => setEditando(false)}
+            projetoId={id}
+            identificadorCliente={adm.identificador_cliente ?? ""}
+            identificadorOperadora={adm.identificador_operadora ?? ""}
+          />
           <DialogOrdemCompra aberto={ocAberta} aoFechar={() => setOcAberta(false)} projetoId={id} />
           <DialogNotaFiscal
             aberto={notaAberta}
