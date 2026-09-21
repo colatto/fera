@@ -50,6 +50,7 @@ import {
   registrarNotaFiscal,
   registrarOrdemCompra,
   registrarRecebimento,
+  retornarEnvio,
   vincularOrdemCompra,
   useAcaoFluxo,
 } from "@/queries/fluxo"
@@ -226,6 +227,59 @@ function DialogCancelar({
             onClick={() => void submeter()}
           >
             Cancelar projeto
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// Recusa de estados inválidos cai no else genérico do banco ("Transição manual
+// não autorizada"); a mensagem do spec ("a reversão exige status ENVIADO") vem
+// da interface ao tratar o erro transacional (design D1).
+function mensagemReversao(erro: unknown): string {
+  const msg = mensagemDeErro(erro)
+  return msg === "Transição manual não autorizada"
+    ? "A reversão exige o projeto em status Enviado."
+    : msg
+}
+
+function DialogReverterEnvio({
+  aberto,
+  aoFechar,
+  projetoId,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  projetoId: number
+}) {
+  const mutacao = useAcaoFluxo(() => retornarEnvio(projetoId))
+
+  async function submeter() {
+    try {
+      await mutacao.mutateAsync(undefined)
+      toast.success("Envio cancelado.")
+      aoFechar()
+    } catch (erro) {
+      toast.error(mensagemReversao(erro))
+    }
+  }
+
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancelar envio</DialogTitle>
+          <DialogDescription>
+            O projeto volta ao status Cadastrado e a data de envio é limpa. O re-envio posterior grava uma nova data.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={aoFechar}>
+            Voltar
+          </Button>
+          <Button disabled={mutacao.isPending} onClick={() => void submeter()}>
+            Cancelar envio
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -623,6 +677,7 @@ export function ProjetoDetalhe() {
   const ehAdm = usuario.perfil === "ADM"
 
   const [cancelando, setCancelando] = useState(false)
+  const [revertendo, setRevertendo] = useState(false)
   const [editando, setEditando] = useState(false)
   const [ocAberta, setOcAberta] = useState(false)
   const [notaAberta, setNotaAberta] = useState(false)
@@ -728,6 +783,11 @@ export function ProjetoDetalhe() {
                   Cancelar projeto
                 </Button>
               </>
+            ) : null}
+            {status === "ENVIADO" ? (
+              <Button size="sm" variant="secondary" onClick={() => setRevertendo(true)}>
+                Cancelar envio
+              </Button>
             ) : null}
             {ehAdm && status === "ENVIADO" ? (
               <Button size="sm" variant="secondary" onClick={() => setOcAberta(true)}>
@@ -864,6 +924,11 @@ export function ProjetoDetalhe() {
       <DialogCancelar
         aberto={cancelando}
         aoFechar={() => setCancelando(false)}
+        projetoId={id}
+      />
+      <DialogReverterEnvio
+        aberto={revertendo}
+        aoFechar={() => setRevertendo(false)}
         projetoId={id}
       />
       {ehAdm ? (

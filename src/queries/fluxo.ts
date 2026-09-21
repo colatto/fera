@@ -69,6 +69,17 @@ export async function cancelarProjeto(id: number, motivo: string): Promise<void>
   if (error) throw error
 }
 
+// Reversão do envio (ENVIADO → CADASTRADO): o banco limpa data_envio na
+// mesma transição e recusa o destino CADASTRADO a partir de qualquer
+// outro status — sem motivo (spec alt-enviado-cadastrado).
+export async function retornarEnvio(id: number): Promise<void> {
+  const { error } = await supabase.rpc("alterar_status_projeto", {
+    p_id: id,
+    p_novo: "CADASTRADO" satisfies StatusProjeto,
+  })
+  if (error) throw error
+}
+
 export async function registrarOrdemCompra(
   p_numero: string,
   p_data: string,

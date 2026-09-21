@@ -166,6 +166,7 @@ begin
   select * into v from public.projeto where id = p_id for update;
   if not found or v.status = 'CANCELADO' then raise exception 'Projeto inexistente ou cancelado'; end if;
   if p_novo = 'ENVIADO' and v.status = 'CADASTRADO' then update public.projeto set status=p_novo, data_envio=coalesce(p_data_envio,current_date) where id=p_id;
+  elsif p_novo = 'CADASTRADO' and v.status = 'ENVIADO' then update public.projeto set status=p_novo, data_envio=null where id=p_id;
   elsif p_novo = 'CANCELADO' and v.status = 'CADASTRADO' and nullif(btrim(p_motivo),'') is not null then update public.projeto set status=p_novo where id=p_id;
   elsif p_novo = 'CANCELADO' and v.status <> 'CADASTRADO' then raise exception 'Cancelamento exige projeto em status CADASTRADO';
   else raise exception 'Transição manual não autorizada'; end if;
