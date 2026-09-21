@@ -5,7 +5,7 @@ Define as operações do fluxo de projetos na interface — criação, envio, ca
 ## Requirements
 
 ### Requirement: Criação de projeto
-A interface MUST oferecer ao ADM a criação de projeto com tipo, cliente e identificador, operadora e identificador, cidade, UF, valor, responsável e predecessor opcional, usando a RPC `criar_projeto`; somente cadastros ativos podem ser selecionados. O valor do projeto MUST ser informado, monetário e positivo, e MUST ser imutável após a criação: nenhuma ação de edição do valor é oferecida em nenhuma tela. O valor MUST NOT constar no evento de criação da linha do tempo. Em caso de sucesso, a interface MUST exibir o código `F-AAAA-NNNN` gerado e o projeto passa a constar na listagem com status inicial `CADASTRADO`.
+A interface MUST oferecer ao ADM a criação de projeto com tipo, cliente e identificador, operadora e identificador, cidade, UF, valor e responsável, usando a RPC `criar_projeto`; somente cadastros ativos podem ser selecionados. O valor do projeto MUST ser informado, monetário e positivo, e MUST ser imutável após a criação: nenhuma ação de edição do valor é oferecida em nenhuma tela. O valor MUST NOT constar no evento de criação da linha do tempo. Em caso de sucesso, a interface MUST exibir o código `F-AAAA-NNNN` gerado e o projeto passa a constar na listagem com status inicial `CADASTRADO`. A RPC `criar_projeto` MUST NOT aceitar parâmetro de projeto predecessor, e a interface MUST NOT oferecer campo de predecessor na criação.
 
 #### Scenario: Criação válida
 - **WHEN** o ADM cria um projeto com dados válidos, incluindo valor positivo
@@ -22,6 +22,10 @@ A interface MUST oferecer ao ADM a criação de projeto com tipo, cliente e iden
 #### Scenario: Erro da reserva de número
 - **WHEN** a RPC rejeita a criação (por exemplo, faixa do tipo esgotada)
 - **THEN** a interface exibe a mensagem de erro do banco e nenhum projeto é adicionado
+
+#### Scenario: Formulário sem predecessor
+- **WHEN** o ADM abre o formulário de novo projeto
+- **THEN** nenhum campo de projeto predecessor é oferecido, e nenhum projeto cancelado é carregado para alimentá-lo
 
 ### Requirement: Imutabilidade do valor do projeto
 O valor do projeto MUST ser definido exclusivamente na criação e MUST NOT ser alterado posteriormente por nenhuma operação do fluxo (envio, cancelamento, ordem de compra, autorização, nota fiscal, recebimentos ou compatibilização); cancelamento de projeto MUST NOT zerar, alterar nem remover o valor gravado.

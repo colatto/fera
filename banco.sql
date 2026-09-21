@@ -6,7 +6,7 @@ create extension if not exists btree_gist;
 
 create type public.app_role as enum ('ADM', 'OPER');
 create type public.project_status as enum ('CADASTRADO', 'ENVIADO', 'OC_REGISTRADA', 'AUTORIZADO_FATURAMENTO', 'NOTA_EMITIDA', 'PAGO', 'CANCELADO');
-create type public.project_event_type as enum ('CRIACAO', 'ALTERACAO_CADASTRAL', 'ALTERACAO_STATUS', 'COMPATIBILIZACAO_FUNDACAO', 'SUBSTITUICAO');
+create type public.project_event_type as enum ('CRIACAO', 'ALTERACAO_CADASTRAL', 'ALTERACAO_STATUS', 'COMPATIBILIZACAO_FUNDACAO');
 
 create table public.usuario (
   id uuid primary key references auth.users(id) on delete restrict,
@@ -49,11 +49,10 @@ create table public.projeto (
   valor numeric(15,2) not null constraint projeto_valor_positivo check (valor > 0),
   responsavel_interno_id uuid not null references public.usuario(id) on delete restrict, status public.project_status not null default 'CADASTRADO', data_envio date,
   fundacao_compatibilizada boolean not null default false, fundacao_compatibilizada_por uuid references public.usuario(id) on delete restrict, fundacao_compatibilizada_em timestamptz,
-  projeto_anterior_id bigint unique references public.projeto(id) on delete restrict, criado_por uuid not null references public.usuario(id) on delete restrict,
+  criado_por uuid not null references public.usuario(id) on delete restrict,
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
   constraint projeto_envio_por_status check (status in ('CADASTRADO', 'CANCELADO') or data_envio is not null),
-  constraint projeto_fundacao_auditada check ((not fundacao_compatibilizada and fundacao_compatibilizada_por is null and fundacao_compatibilizada_em is null) or (fundacao_compatibilizada and fundacao_compatibilizada_por is not null and fundacao_compatibilizada_em is not null)),
-  constraint projeto_anterior_distinto check (projeto_anterior_id is null or projeto_anterior_id <> id)
+  constraint projeto_fundacao_auditada check ((not fundacao_compatibilizada and fundacao_compatibilizada_por is null and fundacao_compatibilizada_em is null) or (fundacao_compatibilizada and fundacao_compatibilizada_por is not null and fundacao_compatibilizada_em is not null))
 );
 create table public.autorizacao_faturamento (
   id bigint generated always as identity primary key, projeto_id bigint not null unique references public.projeto(id) on delete restrict,
@@ -138,7 +137,7 @@ create or replace function public.usuario_adm() returns boolean language sql sta
   select exists (select 1 from public.usuario u where u.id = auth.uid() and u.ativo and u.perfil = 'ADM')
 $$;
 
-create or replace function public.criar_projeto(p_tipo_id bigint, p_cliente_id bigint, p_identificador_cliente varchar, p_operadora_id bigint, p_identificador_operadora varchar, p_cidade varchar, p_uf char(2), p_valor numeric, p_responsavel_id uuid, p_anterior_id bigint default null)
+create or replace function public.criar_projeto(p_tipo_id bigint, p_cliente_id bigint, p_identificador_cliente varchar, p_operadora_id bigint, p_identificador_operadora varchar, p_cidade varchar, p_uf char(2), p_valor numeric, p_responsavel_id uuid)
 returns bigint language plpgsql security definer set search_path = public, auth as $$
 declare v_tipo public.tipo_projeto%rowtype; v_numero integer; v_id bigint; v_ano smallint := extract(year from current_date)::smallint;
 begin
@@ -151,14 +150,10 @@ begin
   perform 1 from public.operadora where id = p_operadora_id and ativo;
   if not found then raise exception 'Operadora inexistente ou inativa'; end if;
   perform 1 from public.usuario where id = p_responsavel_id and ativo; if not found then raise exception 'Responsável inexistente ou inativo'; end if;
-  if p_anterior_id is not null then perform 1 from public.projeto where id = p_anterior_id and status = 'CANCELADO'; if not found then raise exception 'Projeto anterior deve estar cancelado'; end if; end if;
   v_numero := v_tipo.proximo_numero; update public.tipo_projeto set proximo_numero = v_numero + 1 where id = v_tipo.id;
-  insert into public.projeto(numero, ano, codigo_pasta, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, valor, responsavel_interno_id, projeto_anterior_id, criado_por)
-  values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_valor, p_responsavel_id, p_anterior_id, auth.uid()) returning id into v_id;
+  insert into public.projeto(numero, ano, codigo_pasta, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, valor, responsavel_interno_id, criado_por)
+  values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_valor, p_responsavel_id, auth.uid()) returning id into v_id;
   insert into public.evento_projeto(projeto_id, realizado_por, tipo, detalhes) values(v_id, auth.uid(), 'CRIACAO', jsonb_build_object('origem','cadastro'));
-  if p_anterior_id is not null then
-    insert into public.evento_projeto(projeto_id, realizado_por, tipo, detalhes) values(v_id, auth.uid(), 'SUBSTITUICAO', jsonb_build_object('projeto_anterior_id',p_anterior_id));
-  end if;
   return v_id;
 end; $$;
 
@@ -276,4 +271,4 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid,bigint),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.dashboard_operacional(date,date) to authenticated;

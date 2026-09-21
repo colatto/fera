@@ -327,7 +327,6 @@ export type Database = {
           numero: number
           operadora_id: number
           ordem_compra_id: number | null
-          projeto_anterior_id: number | null
           responsavel_interno_id: string
           status: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id: number
@@ -352,7 +351,6 @@ export type Database = {
           numero: number
           operadora_id: number
           ordem_compra_id?: number | null
-          projeto_anterior_id?: number | null
           responsavel_interno_id: string
           status?: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id: number
@@ -377,7 +375,6 @@ export type Database = {
           numero?: number
           operadora_id?: number
           ordem_compra_id?: number | null
-          projeto_anterior_id?: number | null
           responsavel_interno_id?: string
           status?: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id?: number
@@ -439,27 +436,6 @@ export type Database = {
             columns: ["ordem_compra_id"]
             isOneToOne: false
             referencedRelation: "v_ordens_compra_administrativo"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projeto_projeto_anterior_id_fkey"
-            columns: ["projeto_anterior_id"]
-            isOneToOne: true
-            referencedRelation: "projeto"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projeto_projeto_anterior_id_fkey"
-            columns: ["projeto_anterior_id"]
-            isOneToOne: true
-            referencedRelation: "v_projetos_administrativo"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projeto_projeto_anterior_id_fkey"
-            columns: ["projeto_anterior_id"]
-            isOneToOne: true
-            referencedRelation: "v_projetos_operacional"
             referencedColumns: ["id"]
           },
           {
@@ -550,7 +526,7 @@ export type Database = {
           faixa_final: number | null
           faixa_inicial: number
           id: number
-          is_ppi: boolean
+          is_ppi: boolean | null
           limite_parcelas: number
           nome: string
           proximo_numero: number
@@ -563,6 +539,7 @@ export type Database = {
           faixa_final?: number | null
           faixa_inicial: number
           id?: never
+          is_ppi?: boolean | null
           limite_parcelas?: number
           nome: string
           // Preenchido pelo trigger fn_proximo_automatico (nasce = faixa_inicial).
@@ -576,6 +553,7 @@ export type Database = {
           faixa_final?: number | null
           faixa_inicial?: number
           id?: never
+          is_ppi?: boolean | null
           limite_parcelas?: number
           nome?: string
           proximo_numero?: number
@@ -643,7 +621,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["project_event_type"] | null
         }
         Insert: {
-          detalhes?: Json | null
+          detalhes?: never
           id?: number | null
           motivo_cancelamento?: string | null
           projeto_id?: number | null
@@ -654,7 +632,7 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["project_event_type"] | null
         }
         Update: {
-          detalhes?: Json | null
+          detalhes?: never
           id?: number | null
           motivo_cancelamento?: string | null
           projeto_id?: number | null
@@ -831,10 +809,10 @@ export type Database = {
           ativo?: boolean | null
           atualizado_em?: string | null
           criado_em?: string | null
-          email?: string | null
-          id?: string | null
-          nome?: string | null
-          perfil?: Database["public"]["Enums"]["app_role"] | null
+          email: string | null
+          id: string | null
+          nome: string | null
+          perfil: Database["public"]["Enums"]["app_role"] | null
         }
         Update: {
           ativo?: boolean | null
@@ -865,7 +843,6 @@ export type Database = {
       }
       criar_projeto: {
         Args: {
-          p_anterior_id?: number
           p_cidade: string
           p_cliente_id: number
           p_identificador_cliente: string
@@ -916,7 +893,6 @@ export type Database = {
         | "ALTERACAO_CADASTRAL"
         | "ALTERACAO_STATUS"
         | "COMPATIBILIZACAO_FUNDACAO"
-        | "SUBSTITUICAO"
       project_status:
         | "CADASTRADO"
         | "ENVIADO"
@@ -1058,7 +1034,6 @@ export const Constants = {
         "ALTERACAO_CADASTRAL",
         "ALTERACAO_STATUS",
         "COMPATIBILIZACAO_FUNDACAO",
-        "SUBSTITUICAO",
       ],
       project_status: [
         "CADASTRADO",

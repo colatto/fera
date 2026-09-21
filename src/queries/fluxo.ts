@@ -44,7 +44,6 @@ export interface ParametrosCriacao {
   p_uf: string
   p_valor: number
   p_responsavel_id: string
-  p_anterior_id?: number
 }
 
 export async function criarProjeto(params: ParametrosCriacao): Promise<number> {

@@ -21,6 +21,7 @@ npm-debug.log*
 .idea
 *.suo
 *.sw?
+.zcodeignore
 
 # Sistema operacional
 .DS_Store

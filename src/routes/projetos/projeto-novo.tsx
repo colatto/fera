@@ -31,12 +31,7 @@ import {
 } from "@/components/ui/select"
 import { mensagemDeErro } from "@/lib/formato"
 import { criarProjeto, invalidarAposFluxo, type ParametrosCriacao } from "@/queries/fluxo"
-import {
-  chavesProjetos,
-  filtrosVazios,
-  listarProjetos,
-  obterProjeto,
-} from "@/queries/projetos"
+import { obterProjeto } from "@/queries/projetos"
 import {
   apenasAtivos,
   chavesCadastros,
@@ -45,8 +40,6 @@ import {
   listarTipos,
 } from "@/queries/cadastros"
 import { chavesUsuarios, listarUsuariosAtivos } from "@/queries/usuarios"
-
-const SEM_PREDECESSOR = "__sem__"
 
 export function ProjetoNovo() {
   const queryClient = useQueryClient()
@@ -60,7 +53,6 @@ export function ProjetoNovo() {
   const [uf, setUf] = useState("")
   const [valor, setValor] = useState("")
   const [responsavelId, setResponsavelId] = useState("")
-  const [predecessorId, setPredecessorId] = useState(SEM_PREDECESSOR)
   const [processando, setProcessando] = useState(false)
   const [codigoCriado, setCodigoCriado] = useState<string | null>(null)
 
@@ -71,11 +63,6 @@ export function ProjetoNovo() {
   const responsaveis = useQuery({
     queryKey: chavesUsuarios.ativos(),
     queryFn: listarUsuariosAtivos,
-  })
-  // Predecessor: projeto cancelado (validação do banco) — lista limitada a cancelados.
-  const cancelados = useQuery({
-    queryKey: chavesProjetos.lista("ADM", { ...filtrosVazios, status: "CANCELADO" }),
-    queryFn: () => listarProjetos("ADM", { ...filtrosVazios, status: "CANCELADO" }),
   })
 
   // Valor obrigatório e positivo, validado localmente antes da RPC (spec fluxo-projetos).
@@ -107,7 +94,6 @@ export function ProjetoNovo() {
       p_valor: valorNumerico,
       p_responsavel_id: responsavelId,
     }
-    if (predecessorId !== SEM_PREDECESSOR) parametros.p_anterior_id = Number(predecessorId)
     try {
       const idCriado = await criarProjeto(parametros)
       // Código F-AAAA-NNNN gerado pelo banco — exibido após a confirmação.
@@ -239,24 +225,6 @@ export function ProjetoNovo() {
                     {resp.nome}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>Projeto predecessor (opcional)</Label>
-            <Select value={predecessorId} onValueChange={setPredecessorId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Nenhum" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={SEM_PREDECESSOR}>Nenhum</SelectItem>
-                {((cancelados.data ?? []) as { id: number | null; codigo_pasta: string | null }[]).map(
-                  (projeto) => (
-                    <SelectItem key={projeto.id} value={String(projeto.id)}>
-                      {projeto.codigo_pasta}
-                    </SelectItem>
-                  ),
-                )}
               </SelectContent>
             </Select>
           </div>
