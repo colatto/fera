@@ -72,19 +72,25 @@ export async function cancelarProjeto(id: number, motivo: string): Promise<void>
 export async function registrarOrdemCompra(
   p_numero: string,
   p_data: string,
-  p_centro: string | null,
 ): Promise<number> {
   const { data, error } = await supabase.rpc("registrar_ordem_compra", {
     p_numero,
     p_data,
-    p_centro: p_centro ?? undefined,
   })
   if (error) throw error
   return Number(data)
 }
 
-export async function vincularOrdemCompra(p_projeto: number, p_oc: number): Promise<void> {
-  const { error } = await supabase.rpc("vincular_ordem_compra", { p_projeto, p_oc })
+export async function vincularOrdemCompra(
+  p_projeto: number,
+  p_oc: number,
+  p_centro: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc("vincular_ordem_compra", {
+    p_projeto,
+    p_oc,
+    p_centro: p_centro ?? undefined,
+  })
   if (error) throw error
 }
 

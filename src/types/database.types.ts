@@ -266,7 +266,6 @@ export type Database = {
       ordem_compra: {
         Row: {
           atualizado_em: string
-          centro_custo: string | null
           data_oc: string
           id: number
           numero: string
@@ -275,7 +274,6 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string
-          centro_custo?: string | null
           data_oc: string
           id?: never
           numero: string
@@ -284,7 +282,6 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string
-          centro_custo?: string | null
           data_oc?: string
           id?: never
           numero?: string
@@ -312,6 +309,7 @@ export type Database = {
         Row: {
           ano: number
           atualizado_em: string
+          centro_custo: string | null
           cidade: string
           cliente_id: number
           codigo_pasta: string
@@ -336,6 +334,7 @@ export type Database = {
         Insert: {
           ano: number
           atualizado_em?: string
+          centro_custo?: string | null
           cidade: string
           cliente_id: number
           codigo_pasta: string
@@ -360,6 +359,7 @@ export type Database = {
         Update: {
           ano?: number
           atualizado_em?: string
+          centro_custo?: string | null
           cidade?: string
           cliente_id?: number
           codigo_pasta?: string
@@ -683,7 +683,6 @@ export type Database = {
       v_ordens_compra_administrativo: {
         Row: {
           atualizado_em: string | null
-          centro_custo: string | null
           data_oc: string | null
           id: number | null
           numero: string | null
@@ -692,7 +691,6 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string | null
-          centro_custo?: string | null
           data_oc?: string | null
           id?: number | null
           numero?: string | null
@@ -701,7 +699,6 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string | null
-          centro_custo?: string | null
           data_oc?: string | null
           id?: number | null
           numero?: string | null
@@ -880,7 +877,7 @@ export type Database = {
         Returns: number
       }
       registrar_ordem_compra: {
-        Args: { p_centro?: string; p_data: string; p_numero: string }
+        Args: { p_data: string; p_numero: string }
         Returns: number
       }
       registrar_recebimento: {
@@ -890,7 +887,7 @@ export type Database = {
       usuario_adm: { Args: never; Returns: boolean }
       usuario_ativo: { Args: never; Returns: boolean }
       vincular_ordem_compra: {
-        Args: { p_oc: number; p_projeto: number }
+        Args: { p_centro?: string; p_oc: number; p_projeto: number }
         Returns: undefined
       }
     }

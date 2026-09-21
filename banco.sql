@@ -36,7 +36,7 @@ create table public.tipo_projeto (
   constraint tipo_faixas_sem_sobreposicao exclude using gist (faixa with &&)
 );
 create table public.ordem_compra (
-  id bigint generated always as identity primary key, numero varchar(100) not null, data_oc date not null, centro_custo varchar(100),
+  id bigint generated always as identity primary key, numero varchar(100) not null, data_oc date not null,
   registrado_por uuid not null references public.usuario(id) on delete restrict, registrado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
   constraint ordem_compra_numero_normalizada check (numero = btrim(numero)), constraint ordem_compra_numero_unico unique (numero)
 );
@@ -45,7 +45,7 @@ create table public.projeto (
   codigo_pasta varchar(20) not null unique check (codigo_pasta ~ '^F-[0-9]{4}-[0-9]{4,}$'),
   tipo_projeto_id bigint not null references public.tipo_projeto(id) on delete restrict, cliente_id bigint not null references public.cliente(id) on delete restrict,
   identificador_cliente varchar(100) not null, operadora_id bigint not null references public.operadora(id) on delete restrict, identificador_operadora varchar(100) not null,
-  ordem_compra_id bigint references public.ordem_compra(id) on delete restrict, cidade varchar(100) not null, uf char(2) not null check (uf ~ '^[A-Z]{2}$'),
+  ordem_compra_id bigint references public.ordem_compra(id) on delete restrict, centro_custo varchar(100), cidade varchar(100) not null, uf char(2) not null check (uf ~ '^[A-Z]{2}$'),
   valor numeric(15,2) not null constraint projeto_valor_positivo check (valor > 0),
   responsavel_interno_id uuid not null references public.usuario(id) on delete restrict, status public.project_status not null default 'CADASTRADO', data_envio date,
   fundacao_compatibilizada boolean not null default false, fundacao_compatibilizada_por uuid references public.usuario(id) on delete restrict, fundacao_compatibilizada_em timestamptz,
@@ -82,6 +82,7 @@ create index projeto_operadora_idx on public.projeto (operadora_id);
 create index projeto_tipo_idx on public.projeto (tipo_projeto_id);
 create index projeto_localizacao_idx on public.projeto (uf, cidade);
 create index projeto_envio_sem_oc_idx on public.projeto (data_envio) where ordem_compra_id is null and status <> 'CANCELADO';
+create unique index projeto_centro_custo_unico on public.projeto (centro_custo);
 create index evento_linha_tempo_idx on public.evento_projeto (projeto_id, realizado_em desc);
 create index recebimento_nota_idx on public.recebimento (nota_fiscal_id);
 
@@ -171,10 +172,24 @@ begin
   insert into public.evento_projeto(projeto_id, realizado_por, tipo, status_anterior, status_novo, motivo_cancelamento) values(p_id, auth.uid(), 'ALTERACAO_STATUS', v.status, p_novo, p_motivo);
 end; $$;
 
-create or replace function public.registrar_ordem_compra(p_numero varchar, p_data date, p_centro varchar default null) returns bigint language plpgsql security definer set search_path = public, auth as $$
-declare v_id bigint; begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if; insert into public.ordem_compra(numero,data_oc,centro_custo,registrado_por) values(p_numero,p_data,p_centro,auth.uid()) returning id into v_id; return v_id; end; $$;
-create or replace function public.vincular_ordem_compra(p_projeto bigint, p_oc bigint) returns void language plpgsql security definer set search_path = public, auth as $$
-declare v_status public.project_status; begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if; select status into v_status from public.projeto where id=p_projeto for update; if v_status <> 'ENVIADO' then raise exception 'OC requer projeto enviado e ativo'; end if; perform 1 from public.ordem_compra where id=p_oc; if not found then raise exception 'OC inexistente'; end if; update public.projeto set ordem_compra_id=p_oc,status='OC_REGISTRADA' where id=p_projeto; insert into public.evento_projeto(projeto_id,realizado_por,tipo,status_anterior,status_novo) values(p_projeto,auth.uid(),'ALTERACAO_STATUS','ENVIADO','OC_REGISTRADA'); end; $$;
+create or replace function public.registrar_ordem_compra(p_numero varchar, p_data date) returns bigint language plpgsql security definer set search_path = public, auth as $$
+declare v_id bigint; begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if; insert into public.ordem_compra(numero,data_oc,registrado_por) values(p_numero,p_data,auth.uid()) returning id into v_id; return v_id; end; $$;
+create or replace function public.vincular_ordem_compra(p_projeto bigint, p_oc bigint, p_centro varchar default null) returns void language plpgsql security definer set search_path = public, auth as $$
+declare v_status public.project_status; v_centro varchar;
+begin
+  if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if;
+  v_centro := nullif(btrim(coalesce(p_centro, '')), '');
+  select status into v_status from public.projeto where id=p_projeto for update;
+  if v_status <> 'ENVIADO' then raise exception 'OC requer projeto enviado e ativo'; end if;
+  perform 1 from public.ordem_compra where id=p_oc;
+  if not found then raise exception 'OC inexistente'; end if;
+  begin
+    update public.projeto set ordem_compra_id=p_oc,centro_custo=v_centro,status='OC_REGISTRADA' where id=p_projeto;
+  exception
+    when unique_violation then raise exception 'Centro de custo já pertence a outro projeto';
+  end;
+  insert into public.evento_projeto(projeto_id,realizado_por,tipo,status_anterior,status_novo) values(p_projeto,auth.uid(),'ALTERACAO_STATUS','ENVIADO','OC_REGISTRADA');
+end; $$;
 create or replace function public.autorizar_faturamento(p_projeto bigint) returns void language plpgsql security definer set search_path = public, auth as $$
 declare v public.projeto%rowtype; begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if; select * into v from public.projeto where id=p_projeto for update; if not found or v.status <> 'OC_REGISTRADA' or v.ordem_compra_id is null then raise exception 'Autorização requer OC registrada'; end if; insert into public.autorizacao_faturamento(projeto_id,autorizado_por) values(p_projeto,auth.uid()); update public.projeto set status='AUTORIZADO_FATURAMENTO' where id=p_projeto; insert into public.evento_projeto(projeto_id,realizado_por,tipo,status_anterior,status_novo) values(p_projeto,auth.uid(),'ALTERACAO_STATUS','OC_REGISTRADA','AUTORIZADO_FATURAMENTO'); end; $$;
 create or replace function public.registrar_nota_fiscal(p_projeto bigint,p_numero varchar,p_data date) returns bigint language plpgsql security definer set search_path = public, auth as $$
@@ -267,10 +282,10 @@ create view public.v_eventos_operacionais with (security_barrier = true) as
 create view public.v_dashboard_operacional with (security_barrier = true) as
   select status, count(*)::bigint quantidade from public.projeto where status <> 'CANCELADO' and public.usuario_ativo() group by status;
 create view public.v_ordens_compra_administrativo with (security_barrier = true) as
-  select id,numero,data_oc,centro_custo,registrado_por,registrado_em,atualizado_em from public.ordem_compra where public.usuario_adm();
+  select id,numero,data_oc,registrado_por,registrado_em,atualizado_em from public.ordem_compra where public.usuario_adm();
 create view public.v_projetos_administrativo with (security_barrier = true) as
   select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,
-    oc.numero numero_oc,oc.data_oc,oc.centro_custo,af.autorizado_por,af.autorizado_em,nf.id nota_fiscal_id,nf.numero numero_nota_fiscal,nf.data_emissao,nf.valor valor_nota,
+    oc.numero numero_oc,oc.data_oc,p.centro_custo,af.autorizado_por,af.autorizado_em,nf.id nota_fiscal_id,nf.numero numero_nota_fiscal,nf.data_emissao,nf.valor valor_nota,
     coalesce(r.valor_recebido,0::numeric) valor_recebido, nf.valor - coalesce(r.valor_recebido,0::numeric) saldo_receber,
     (nf.data_emissao + 30) previsao_recebimento,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.valor
   from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
@@ -290,4 +305,4 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date,varchar),public.vincular_ordem_compra(bigint,bigint),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar),public.dashboard_operacional(date,date) to authenticated;

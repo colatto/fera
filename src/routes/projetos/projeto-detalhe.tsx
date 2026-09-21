@@ -268,10 +268,10 @@ function DialogOrdemCompra({
     }) => {
       let idOc = vars.ocId
       if (vars.modo === "nova") {
-        idOc = await registrarOrdemCompra(vars.numero, vars.data, vars.centro)
+        idOc = await registrarOrdemCompra(vars.numero, vars.data)
         registroFeito.current = true
       }
-      await vincularOrdemCompra(projetoId, idOc)
+      await vincularOrdemCompra(projetoId, idOc, vars.centro)
     },
   )
 
@@ -354,12 +354,12 @@ function DialogOrdemCompra({
                 onChange={(e) => setData(e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="oc-centro">Centro de custo (opcional)</Label>
-              <Input id="oc-centro" value={centro} onChange={(e) => setCentro(e.target.value)} />
-            </div>
           </div>
         )}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="oc-centro">Centro de custo (opcional)</Label>
+          <Input id="oc-centro" value={centro} onChange={(e) => setCentro(e.target.value)} />
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={aoFechar}>
             Voltar
@@ -585,7 +585,7 @@ function DialogEditarIdentificadores({
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="editar-ident-cliente">Identificador do cliente</Label>
+            <Label htmlFor="editar-ident-cliente">ID do cliente</Label>
             <Input
               id="editar-ident-cliente"
               value={cliente}
@@ -594,7 +594,7 @@ function DialogEditarIdentificadores({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="editar-ident-operadora">Identificador da operadora</Label>
+            <Label htmlFor="editar-ident-operadora">ID da operadora</Label>
             <Input
               id="editar-ident-operadora"
               value={operadora}
