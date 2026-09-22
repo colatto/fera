@@ -278,7 +278,7 @@ function DialogReverterEnvio({
           <Button variant="outline" onClick={aoFechar}>
             Voltar
           </Button>
-          <Button disabled={mutacao.isPending} onClick={() => void submeter()}>
+          <Button variant="destructive" disabled={mutacao.isPending} onClick={() => void submeter()}>
             Cancelar envio
           </Button>
         </DialogFooter>
@@ -785,7 +785,7 @@ export function ProjetoDetalhe() {
               </>
             ) : null}
             {status === "ENVIADO" ? (
-              <Button size="sm" variant="secondary" onClick={() => setRevertendo(true)}>
+              <Button size="sm" variant="destructive" onClick={() => setRevertendo(true)}>
                 Cancelar envio
               </Button>
             ) : null}
