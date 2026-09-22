@@ -883,6 +883,9 @@ export function ProjetoDetalhe() {
                   valor={`${adm.numero_oc} (${formatarData(adm.data_oc)})`}
                 />
               ) : null}
+              {adm.centro_custo ? (
+                <LinhaFinanceira rotulo="Centro de custo" valor={adm.centro_custo} />
+              ) : null}
             </CardContent>
           </Card>
         ) : null}
