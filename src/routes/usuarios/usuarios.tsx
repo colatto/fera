@@ -243,7 +243,11 @@ function DialogEditarUsuario({
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <Label>Perfil</Label>
-            <Select value={perfil} onValueChange={(v) => setPerfil(v as Perfil)}>
+            <Select
+              value={perfil}
+              disabled={redefinicaoAberta}
+              onValueChange={(v) => setPerfil(v as Perfil)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -255,7 +259,12 @@ function DialogEditarUsuario({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="editar-nome">Nome</Label>
-            <Input id="editar-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+            <Input
+              id="editar-nome"
+              value={nome}
+              disabled={redefinicaoAberta}
+              onChange={(e) => setNome(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="editar-email">E-mail</Label>
@@ -263,6 +272,7 @@ function DialogEditarUsuario({
               id="editar-email"
               type="email"
               value={email}
+              disabled={redefinicaoAberta}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
@@ -304,28 +314,34 @@ function DialogEditarUsuario({
               </div>
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setRedefinicaoAberta(true)}>
-              Redefinir senha
-            </Button>
-            <Button
-              variant={usuario.ativo ? "destructive" : "outline"}
-              size="sm"
-              disabled={mutacaoSituacao.isPending}
-              onClick={() => mutacaoSituacao.mutate(!usuario.ativo)}
-            >
-              {usuario.ativo ? "Inativar" : "Reativar"}
-            </Button>
-          </div>
+          {/* Modo exclusivo de redefinição: ações e rodapé ocultos enquanto o
+              campo de nova senha está revelado (spec administracao-usuarios). */}
+          {!redefinicaoAberta ? (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setRedefinicaoAberta(true)}>
+                Redefinir senha
+              </Button>
+              <Button
+                variant={usuario.ativo ? "destructive" : "outline"}
+                size="sm"
+                disabled={mutacaoSituacao.isPending}
+                onClick={() => mutacaoSituacao.mutate(!usuario.ativo)}
+              >
+                {usuario.ativo ? "Inativar" : "Reativar"}
+              </Button>
+            </div>
+          ) : null}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={aoFechar}>
-            Voltar
-          </Button>
-          <Button disabled={!valido || mutacao.isPending} onClick={() => mutacao.mutate()}>
-            Salvar
-          </Button>
-        </DialogFooter>
+        {!redefinicaoAberta ? (
+          <DialogFooter>
+            <Button variant="outline" onClick={aoFechar}>
+              Voltar
+            </Button>
+            <Button disabled={!valido || mutacao.isPending} onClick={() => mutacao.mutate()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        ) : null}
       </DialogContent>
     </Dialog>
   )
