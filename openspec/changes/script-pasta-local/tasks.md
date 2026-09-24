@@ -19,11 +19,12 @@
 - [x] 3.2 `DialogEditarIdentificadores` ganha o campo "Pasta local (opcional)" (`maxLength` 500), pré-preenchido com o valor vigente a cada abertura; identificadores continuam obrigatórios; pasta preenchida valida `^[A-Za-z]:\\` sem caracteres de controle, bloqueando antes da RPC; descrição do diálogo passa a mencionar a pasta
 - [x] 3.3 Linha "Pasta local" no card "Dados do projeto" — caminho em `font-mono` com truncamento, visível para ADM e OPER, "—" quando ausente, cancelado incluído
 - [x] 3.4 Botão "Copiar" com `navigator.clipboard.writeText` + toast de confirmação, disponível para qualquer perfil quando a pasta existe
-- [x] 3.5 Âncora "Abrir pasta" com `href="search-ms:query=&crumb=location=" + encodeURIComponent(caminho)`, somente quando a pasta existe e o caminho casa com o padrão validado
+- [x] 3.5 Âncora "Abrir pasta" com `href="search-ms:query=&crumb=location:" + encodeURIComponent(caminho)`, somente quando a pasta existe e o caminho casa com o padrão validado
 
 ## 4. Verificação
 
 - [x] 4.1 Via MCP: consultas de sanidade nas duas views retornando `pasta_local` para um projeto existente; constraint recusa caminho inválido; RPC: edição definindo pasta, limpar pasta com campo vazio, no-op com tudo idêntico, recusa fora de `CADASTRADO` e por não ADM
 - [x] 4.2 `npm run build` (`tsc -b && vite build`) passando sem erro
 - [x] 4.3 Revisão dos cenários das specs contra a implementação (edição com/sem pasta, limpar, inválidos, no-op, permissões e status, exibição por perfil, cópia, ausência na listagem/CSV)
-- [ ] 4.4 Entregar ao usuário o roteiro de validação manual em máquina Windows 11 com Google Chrome (ambiente homologado): primeira abertura com a confirmação de protocolo do Chrome, janela do Explorador posicionada na pasta — incluindo caminho com espaços e acentos —, aberturas seguintes diretas, confirmação negada sem erro na aplicação, cópia do caminho como alternativa e nenhuma instalação necessária; ajustar a codificação da âncora se o caminho chegar distorcido (o Chrome pode re-codificar ao despachar o protocolo)
+- [x] 4.4 Entregar ao usuário o roteiro de validação manual em máquina Windows 11 com Google Chrome (ambiente homologado): primeira abertura com a confirmação de protocolo do Chrome, janela do Explorador posicionada na pasta — incluindo caminho com espaços e acentos —, aberturas seguintes diretas, confirmação negada sem erro na aplicação, cópia do caminho como alternativa e nenhuma instalação necessária; ajustar a codificação da âncora se o caminho chegar distorcido (o Chrome pode re-codificar ao despachar o protocolo)
+- [x] 4.5 Ajuste da validação manual: a emissão usava `crumb=location=<caminho>` (com `=`) e o Explorador abria "Resultados da Pesquisa" com o caminho tratado como termo de busca — corrigido para a sintaxe documentada `crumb=location:<caminho>` (dois-pontos); spec, design, proposal e âncora atualizados

@@ -918,9 +918,12 @@ export function ProjetoDetalhe() {
                     </Button>
                     {pastaValida(p.pasta_local) ? (
                       <Button asChild variant="outline" size="sm">
+                        {/* location: com dois-pontos é a sintaxe documentada do crumb
+                            do search-ms — com "=" o Explorador abre "Resultados da
+                            Pesquisa" tratando o caminho como termo de busca. */}
                         <a
                           href={
-                            "search-ms:query=&crumb=location=" + encodeURIComponent(p.pasta_local)
+                            "search-ms:query=&crumb=location:" + encodeURIComponent(p.pasta_local)
                           }
                           title="Abre o Explorador de Arquivos na pasta neste computador"
                         >

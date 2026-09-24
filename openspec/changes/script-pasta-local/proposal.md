@@ -9,7 +9,7 @@ Os arquivos técnicos de cada projeto vivem em uma pasta local (unidade `P:\`) f
 - Novo campo opcional **Pasta local** (`projeto.pasta_local`, `varchar(500) null`), informado e corrigido pelo ADM no diálogo **Editar** do detalhe do projeto, disponível enquanto o status é `CADASTRADO`. O formulário "Novo projeto" permanece inalterado.
 - A RPC `editar_identificadores_projeto` ganha o parâmetro opcional `p_pasta_local varchar default null` — campo vazio limpa a pasta, ausente preserva o vigente; a edição continua transacional, com um único evento. Chamadas com a assinatura antiga de 3 parâmetros seguem válidas durante o deploy (default), mas a assinatura antiga é dropada e o grant reemitido.
 - Exibição da pasta no detalhe do projeto para ADM e OPER (não é dado financeiro), com botão **Copiar caminho** e botão **Abrir pasta**.
-- **Abrir pasta** via protocolo **nativo do Windows** `search-ms:query=&crumb=location=<caminho codificado>` (Windows 11) — nada é instalado na máquina; o primeiro clique mostra a confirmação de protocolo externo do Google Chrome e o Windows posiciona o Explorador na pasta.
+- **Abrir pasta** via protocolo **nativo do Windows** `search-ms:query=&crumb=location:<caminho codificado>` (Windows 11; crumb de localização separado por dois-pontos) — nada é instalado na máquina; o primeiro clique mostra a confirmação de protocolo externo do Google Chrome e o Windows posiciona o Explorador na pasta.
 - Copiar caminho funciona sempre — caminho universal quando a confirmação é negada ou o protocolo está bloqueado por política do navegador.
 
 ## Capabilities
