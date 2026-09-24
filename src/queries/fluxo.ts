@@ -159,15 +159,19 @@ export async function definirCompatibilizacaoFundacao(
   if (error) throw error
 }
 
+// Pasta local: string trimada; '' significa limpar a pasta (design D2) —
+// a RPC não recebe undefined, que preservaria o valor vigente.
 export async function editarIdentificadoresProjeto(
   p_id: number,
   p_identificador_cliente: string,
   p_identificador_operadora: string,
+  p_pasta_local: string,
 ): Promise<void> {
   const { error } = await supabase.rpc("editar_identificadores_projeto", {
     p_id,
     p_identificador_cliente: p_identificador_cliente.trim(),
     p_identificador_operadora: p_identificador_operadora.trim(),
+    p_pasta_local: p_pasta_local.trim(),
   })
   if (error) throw error
 }

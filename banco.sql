@@ -39,13 +39,14 @@ create table public.projeto (
   codigo_pasta varchar(20) not null unique check (codigo_pasta ~ '^F-[0-9]{4}-[0-9]{4,}$'),
   tipo_projeto_id bigint not null references public.tipo_projeto(id) on delete restrict, cliente_id bigint not null references public.cliente(id) on delete restrict,
   identificador_cliente varchar(100) not null, operadora_id bigint not null references public.operadora(id) on delete restrict, identificador_operadora varchar(100) not null,
-  ordem_compra_id bigint references public.ordem_compra(id) on delete restrict, centro_custo varchar(100), cidade varchar(100) not null, uf char(2) not null check (uf ~ '^[A-Z]{2}$'),
+  ordem_compra_id bigint references public.ordem_compra(id) on delete restrict, centro_custo varchar(100), pasta_local varchar(500), cidade varchar(100) not null, uf char(2) not null check (uf ~ '^[A-Z]{2}$'),
   valor numeric(15,2) not null constraint projeto_valor_positivo check (valor > 0),
   responsavel_interno_id uuid not null references public.usuario(id) on delete restrict, status public.project_status not null default 'CADASTRADO', data_envio date,
   fundacao_compatibilizada boolean not null default false, fundacao_compatibilizada_por uuid references public.usuario(id) on delete restrict, fundacao_compatibilizada_em timestamptz,
   criado_por uuid not null references public.usuario(id) on delete restrict,
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
   constraint projeto_envio_por_status check (status in ('CADASTRADO', 'CANCELADO') or data_envio is not null),
+  constraint projeto_pasta_local_caminho check (pasta_local is null or (pasta_local = btrim(pasta_local) and pasta_local ~ '^[A-Za-z]:\\' and pasta_local !~ '[[:cntrl:]]')),
   constraint projeto_fundacao_auditada check ((not fundacao_compatibilizada and fundacao_compatibilizada_por is null and fundacao_compatibilizada_em is null) or (fundacao_compatibilizada and fundacao_compatibilizada_por is not null and fundacao_compatibilizada_em is not null)),
   constraint projeto_ano_numero_key unique (ano, numero)
 );
@@ -194,12 +195,19 @@ declare i jsonb; begin if jsonb_typeof(p_itens) <> 'array' then raise exception 
 create or replace function public.definir_compatibilizacao_fundacao(p_projeto bigint,p_marcada boolean) returns void language plpgsql security definer set search_path = public, auth as $$
 begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcode='42501'; end if; update public.projeto set fundacao_compatibilizada=p_marcada,fundacao_compatibilizada_por=case when p_marcada then auth.uid() else null end,fundacao_compatibilizada_em=case when p_marcada then now() else null end where id=p_projeto; if not found then raise exception 'Projeto inexistente'; end if; insert into public.evento_projeto(projeto_id,realizado_por,tipo,detalhes) values(p_projeto,auth.uid(),'COMPATIBILIZACAO_FUNDACAO',jsonb_build_object('marcada',p_marcada)); end; $$;
 
-create or replace function public.editar_identificadores_projeto(p_id bigint, p_identificador_cliente varchar, p_identificador_operadora varchar)
+-- p_pasta_local: ausente (null) preserva a pasta vigente — mantém compatíveis as
+-- chamadas antigas de 3 parâmetros durante a janela de deploy; vazio ou só de
+-- espaços limpa a pasta; caminho preenchido é trimado e validado como caminho
+-- Windows (letra de unidade + ":\", sem caracteres de controle). No-op somente
+-- quando identificadores E pasta estão idênticos aos vigentes — um único evento
+-- ALTERACAO_CADASTRAL quando algo muda.
+create or replace function public.editar_identificadores_projeto(p_id bigint, p_identificador_cliente varchar, p_identificador_operadora varchar, p_pasta_local varchar default null)
 returns void language plpgsql security definer set search_path = public, auth as $$
 declare
   v public.projeto%rowtype;
   v_cliente varchar;
   v_operadora varchar;
+  v_pasta varchar;
 begin
   if not public.usuario_adm() then raise exception 'Apenas ADM pode editar identificadores do projeto' using errcode = '42501'; end if;
   select * into v from public.projeto where id = p_id for update;
@@ -208,10 +216,27 @@ begin
   v_cliente := btrim(coalesce(p_identificador_cliente, ''));
   v_operadora := btrim(coalesce(p_identificador_operadora, ''));
   if v_cliente = '' or v_operadora = '' then raise exception 'Identificadores do cliente e da operadora são obrigatórios'; end if;
-  if v_cliente = v.identificador_cliente and v_operadora = v.identificador_operadora then return; end if;
-  update public.projeto set identificador_cliente = v_cliente, identificador_operadora = v_operadora where id = p_id;
+  if p_pasta_local is null then
+    v_pasta := v.pasta_local;
+  else
+    v_pasta := nullif(btrim(p_pasta_local), '');
+    if v_pasta is not null then
+      if v_pasta !~ '^[A-Za-z]:\\' then
+        raise exception 'Pasta local deve ser um caminho Windows iniciado por letra de unidade (ex.: P:\Projetos)';
+      end if;
+      if v_pasta ~ '[[:cntrl:]]' then
+        raise exception 'Pasta local não pode conter caracteres de controle';
+      end if;
+      if length(v_pasta) > 500 then
+        raise exception 'Pasta local excede o limite de 500 caracteres';
+      end if;
+    end if;
+  end if;
+  if v_cliente = v.identificador_cliente and v_operadora = v.identificador_operadora and v_pasta is not distinct from v.pasta_local then return; end if;
+  update public.projeto set identificador_cliente = v_cliente, identificador_operadora = v_operadora, pasta_local = v_pasta where id = p_id;
   insert into public.evento_projeto(projeto_id, realizado_por, tipo) values(p_id, auth.uid(), 'ALTERACAO_CADASTRAL');
-end; $$;
+end;
+$$;
 
 alter table public.usuario enable row level security;
 alter table public.cliente enable row level security;
@@ -257,7 +282,7 @@ end; $$;
 create view public.v_usuarios_manutencao with (security_barrier = true) as
   select id, perfil, nome, email, ativo, criado_em, atualizado_em from public.usuario where public.usuario_adm();
 create view public.v_projetos_operacional with (security_barrier = true) as
-  select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em
+  select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.pasta_local
   from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
   where public.usuario_ativo();
 create view public.v_eventos_operacionais with (security_barrier = true) as
@@ -271,7 +296,7 @@ create view public.v_projetos_administrativo with (security_barrier = true) as
   select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,
     oc.numero numero_oc,oc.data_oc,p.centro_custo,af.autorizado_por,af.autorizado_em,nf.id nota_fiscal_id,nf.numero numero_nota_fiscal,nf.data_emissao,nf.valor valor_nota,
     coalesce(r.valor_recebido,0::numeric) valor_recebido, nf.valor - coalesce(r.valor_recebido,0::numeric) saldo_receber,
-    (nf.data_emissao + 30) previsao_recebimento,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.valor
+    (nf.data_emissao + 30) previsao_recebimento,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.valor,p.pasta_local
   from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
     left join public.ordem_compra oc on oc.id=p.ordem_compra_id left join public.autorizacao_faturamento af on af.projeto_id=p.id left join public.nota_fiscal nf on nf.projeto_id=p.id
     left join lateral (select sum(valor_recebido)::numeric as valor_recebido from public.recebimento where nota_fiscal_id=nf.id) r on true
@@ -289,4 +314,4 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar,varchar),public.dashboard_operacional(date,date) to authenticated;

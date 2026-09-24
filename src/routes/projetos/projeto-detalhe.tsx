@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useParams, useRouteLoaderData } from "react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Copy, FolderOpen } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -69,6 +69,28 @@ import { chavesUsuarios, listarNomesUsuarios } from "@/queries/usuarios"
 // Datas puras (date) ganham meio-dia como âncora neutra entre itens com hora:
 // usado apenas na previsão de recebimento — documentos usam o instante real.
 const aoMeioDia = (data: string) => `${data}T12:00:00`
+
+// Caminho Windows absoluto: letra de unidade seguida de ":\", sem caracteres de
+// controle — o mesmo padrão validado pela RPC e pela constraint da tabela. A
+// emissão do link de abertura só parte de caminho validado (spec abertura-pasta-local).
+const PADRAO_PASTA_LOCAL = /^[A-Za-z]:\\/
+const CARACTERE_DE_CONTROLE = /[\u0000-\u001F\u007F]/
+
+function pastaValida(caminho: string): boolean {
+  return PADRAO_PASTA_LOCAL.test(caminho) && !CARACTERE_DE_CONTROLE.test(caminho)
+}
+
+// Cópia universal do caminho (spec consulta-projetos): disponível a qualquer
+// perfil quando a pasta existe, inclusive quando a abertura é recusada pelo
+// navegador (confirmação negada ou protocolo bloqueado).
+async function copiarCaminhoPasta(caminho: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(caminho)
+    toast.success("Caminho copiado para a área de transferência.")
+  } catch (erro) {
+    toast.error(mensagemDeErro(erro))
+  }
+}
 
 // Humaniza `detalhes` por tipo de evento; o default é omitir, nunca serializar JSON.
 function descricaoDetalhesEvento(evento: EventoProjeto): string | undefined {
@@ -590,36 +612,49 @@ function DialogEditarIdentificadores({
   projetoId,
   identificadorCliente,
   identificadorOperadora,
+  pastaLocal,
 }: {
   aberto: boolean
   aoFechar: () => void
   projetoId: number
   identificadorCliente: string
   identificadorOperadora: string
+  pastaLocal: string
 }) {
   const [cliente, setCliente] = useState(identificadorCliente)
   const [operadora, setOperadora] = useState(identificadorOperadora)
+  const [pasta, setPasta] = useState(pastaLocal)
   const mutacao = useAcaoFluxo(
-    (vars: { cliente: string; operadora: string }) =>
-      editarIdentificadoresProjeto(projetoId, vars.cliente, vars.operadora),
+    (vars: { cliente: string; operadora: string; pasta: string }) =>
+      editarIdentificadoresProjeto(projetoId, vars.cliente, vars.operadora, vars.pasta),
   )
 
   // O diálogo permanece montado enquanto o projeto está em CADASTRADO: o pre-fill é
-  // refeito a cada abertura com os identificadores vigentes do detalhe. Os valores
-  // ficam fora das dependências para não descartar o que o ADM digita se a consulta
-  // do detalhe atualizar (padrão do DialogRecebimento).
+  // refeito a cada abertura com os valores vigentes do detalhe. Os valores ficam fora
+  // das dependências para não descartar o que o ADM digita se a consulta do detalhe
+  // atualizar (padrão do DialogRecebimento).
   useEffect(() => {
     if (!aberto) return
     setCliente(identificadorCliente)
     setOperadora(identificadorOperadora)
+    setPasta(pastaLocal)
   }, [aberto])
 
-  // Validação local antes da RPC (spec fluxo-projetos): trim e não vazio nos dois campos.
-  const valido = cliente.trim() !== "" && operadora.trim() !== ""
+  // Validação local antes da RPC (spec fluxo-projetos): trim e não vazio nos dois
+  // campos; pasta preenchida precisa ser um caminho Windows válido. Vazio MEANS
+  // limpar a pasta — a ausência não impede a confirmação.
+  const pastaTrimada = pasta.trim()
+  const pastaInvalida = pastaTrimada !== "" && !pastaValida(pastaTrimada)
+  const valido =
+    cliente.trim() !== "" && operadora.trim() !== "" && !pastaInvalida
 
   async function submeter() {
     try {
-      await mutacao.mutateAsync({ cliente: cliente.trim(), operadora: operadora.trim() })
+      await mutacao.mutateAsync({
+        cliente: cliente.trim(),
+        operadora: operadora.trim(),
+        pasta: pastaTrimada,
+      })
       toast.success("Identificadores atualizados.")
       aoFechar()
     } catch (erro) {
@@ -633,8 +668,9 @@ function DialogEditarIdentificadores({
         <DialogHeader>
           <DialogTitle>Editar identificadores</DialogTitle>
           <DialogDescription>
-            Corrige apenas os textos dos identificadores — cliente e operadora vinculadas
-            permanecem as mesmas. A alteração fica registrada na linha do tempo.
+            Corrige apenas os textos dos identificadores e a pasta local — cliente e
+            operadora vinculadas permanecem as mesmas. A alteração fica registrada na
+            linha do tempo.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -655,6 +691,26 @@ function DialogEditarIdentificadores({
               maxLength={100}
               onChange={(e) => setOperadora(e.target.value)}
             />
+          </div>
+          <div className="col-span-2 flex flex-col gap-1.5">
+            <Label htmlFor="editar-pasta-local">Pasta local (opcional)</Label>
+            <Input
+              id="editar-pasta-local"
+              value={pasta}
+              maxLength={500}
+              className="font-mono"
+              placeholder="P:\Projetos\F-2026-0001"
+              onChange={(e) => setPasta(e.target.value)}
+            />
+            {pastaInvalida ? (
+              <p className="text-xs text-destructive">
+                Informe um caminho Windows iniciado por letra de unidade (ex.: P:\Projetos)
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Deixar vazio remove a pasta cadastrada.
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
@@ -841,6 +897,44 @@ export function ProjetoDetalhe() {
               rotulo="Fundação compatibilizada"
               valor={p.fundacao_compatibilizada ? "Sim" : "Não"}
             />
+            <div className="col-span-2 md:col-span-3">
+              <p className="text-xs text-muted-foreground">Pasta local</p>
+              {p.pasta_local ? (
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <p
+                    className="min-w-0 max-w-full truncate font-mono font-medium"
+                    title={p.pasta_local}
+                  >
+                    {p.pasta_local}
+                  </p>
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void copiarCaminhoPasta(p.pasta_local ?? "")}
+                    >
+                      <Copy className="size-4" aria-hidden />
+                      Copiar
+                    </Button>
+                    {pastaValida(p.pasta_local) ? (
+                      <Button asChild variant="outline" size="sm">
+                        <a
+                          href={
+                            "search-ms:query=&crumb=location=" + encodeURIComponent(p.pasta_local)
+                          }
+                          title="Abre o Explorador de Arquivos na pasta neste computador"
+                        >
+                          <FolderOpen className="size-4" aria-hidden />
+                          Abrir pasta
+                        </a>
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <p className="font-medium">—</p>
+              )}
+            </div>
             {ehAdm ? (
               <div className="col-span-2 flex items-center gap-3 md:col-span-3">
                 <Switch
@@ -942,6 +1036,7 @@ export function ProjetoDetalhe() {
             projetoId={id}
             identificadorCliente={adm.identificador_cliente ?? ""}
             identificadorOperadora={adm.identificador_operadora ?? ""}
+            pastaLocal={adm.pasta_local ?? ""}
           />
           <DialogOrdemCompra aberto={ocAberta} aoFechar={() => setOcAberta(false)} projetoId={id} />
           <DialogNotaFiscal

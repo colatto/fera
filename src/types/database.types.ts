@@ -325,6 +325,7 @@ export type Database = {
           numero: number
           operadora_id: number
           ordem_compra_id: number | null
+          pasta_local: string | null
           responsavel_interno_id: string
           status: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id: number
@@ -350,6 +351,7 @@ export type Database = {
           numero: number
           operadora_id: number
           ordem_compra_id?: number | null
+          pasta_local?: string | null
           responsavel_interno_id: string
           status?: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id: number
@@ -375,6 +377,7 @@ export type Database = {
           numero?: number
           operadora_id?: number
           ordem_compra_id?: number | null
+          pasta_local?: string | null
           responsavel_interno_id?: string
           status?: Database["public"]["Enums"]["project_status"]
           tipo_projeto_id?: number
@@ -747,6 +750,7 @@ export type Database = {
           numero_nota_fiscal: string | null
           numero_oc: string | null
           operadora: string | null
+          pasta_local: string | null
           previsao_recebimento: string | null
           saldo_receber: number | null
           status: Database["public"]["Enums"]["project_status"] | null
@@ -788,6 +792,7 @@ export type Database = {
           identificador_operadora: string | null
           numero: number | null
           operadora: string | null
+          pasta_local: string | null
           status: Database["public"]["Enums"]["project_status"] | null
           tipo_projeto: string | null
           uf: string | null
@@ -871,6 +876,7 @@ export type Database = {
           p_id: number
           p_identificador_cliente: string
           p_identificador_operadora: string
+          p_pasta_local?: string
         }
         Returns: undefined
       }
