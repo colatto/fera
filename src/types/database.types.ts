@@ -517,46 +517,48 @@ export type Database = {
           },
         ]
       }
+      sequencia_projeto: {
+        Row: {
+          ano: number
+          atualizado_em: string
+          proximo_numero: number
+        }
+        Insert: {
+          ano: number
+          atualizado_em?: string
+          proximo_numero?: number
+        }
+        Update: {
+          ano?: number
+          atualizado_em?: string
+          proximo_numero?: number
+        }
+        Relationships: []
+      }
       tipo_projeto: {
         Row: {
           ativo: boolean
           atualizado_em: string
           criado_em: string
-          faixa: unknown
-          faixa_final: number | null
-          faixa_inicial: number
           id: number
-          is_ppi: boolean | null
           limite_parcelas: number
           nome: string
-          proximo_numero: number
         }
         Insert: {
           ativo?: boolean
           atualizado_em?: string
           criado_em?: string
-          faixa?: unknown
-          faixa_final?: number | null
-          faixa_inicial: number
           id?: never
-          is_ppi?: boolean | null
           limite_parcelas?: number
           nome: string
-          // Preenchido pelo trigger fn_proximo_automatico (nasce = faixa_inicial).
-          proximo_numero?: number
         }
         Update: {
           ativo?: boolean
           atualizado_em?: string
           criado_em?: string
-          faixa?: unknown
-          faixa_final?: number | null
-          faixa_inicial?: number
           id?: never
-          is_ppi?: boolean | null
           limite_parcelas?: number
           nome?: string
-          proximo_numero?: number
         }
         Relationships: []
       }

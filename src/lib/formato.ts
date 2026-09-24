@@ -87,20 +87,6 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
     comValor: 'Já existe um tipo de projeto com o nome "X".',
     semValor: "Já existe um tipo de projeto com este nome.",
   },
-  tipo_faixas_sem_sobreposicao: {
-    comValor: "A faixa de números sobrepõe a faixa de outro tipo de projeto.",
-    semValor: "A faixa de números sobrepõe a faixa de outro tipo de projeto.",
-  },
-  tipo_faixa_valida: {
-    comValor:
-      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 5001 (final opcional); os demais, 0–5000 com faixa final obrigatória.",
-    semValor:
-      "Faixa inconsistente com o nome do tipo: tipos chamados PPI usam faixa a partir de 5001 (final opcional); os demais, 0–5000 com faixa final obrigatória.",
-  },
-  tipo_proximo_valido: {
-    comValor: "O próximo número deve estar dentro da faixa definida.",
-    semValor: "O próximo número deve estar dentro da faixa definida.",
-  },
   tipo_torre_limite_parcelas: {
     comValor: "O tipo Torre exige limite de parcelas entre 1 e 3.",
     semValor: "O tipo Torre exige limite de parcelas entre 1 e 3.",

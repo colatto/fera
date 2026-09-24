@@ -1,19 +1,4 @@
-## Purpose
-
-Define a manutenção dos cadastros básicos — clientes, operadoras e tipos de projeto — na interface, exclusiva do ADM, com inativação no lugar de exclusão física e regras de formulário coerentes com as restrições do banco; define também a seleção de cadastros para novos projetos.
-
-## Requirements
-
-### Requirement: Manutenção exclusiva de ADM com históricos
-A manutenção de clientes, operadoras e tipos de projeto MUST ser oferecida somente na navegação do ADM. As listas de manutenção MUST exibir cadastros ativos e inativos, e a saída de um cadastro MUST ser a inativação; a interface MUST NOT oferecer exclusão física.
-
-#### Scenario: ADM inativa cadastro
-- **WHEN** o ADM inativa uma operadora sem projetos vinculados impeditivos
-- **THEN** a operadora permanece listada como inativa e deixa de ser selecionável para novos projetos
-
-#### Scenario: Sem exclusão física
-- **WHEN** o ADM consulta as ações disponíveis de um cadastro
-- **THEN** não existe ação de excluir; somente inativação/reativação e edição
+## MODIFIED Requirements
 
 ### Requirement: Regras de formulário dos cadastros
 Os formulários MUST validar localmente o formato dos campos — CNPJ opcional somente com dígitos, nomes obrigatórios e, em tipo de projeto, limite de parcelas mínimo 1 — e MUST exibir as restrições do banco (unicidade de CNPJ/nome, `Torre` com limite de parcelas fora de 1 a 3) como mensagens traduzidas, em português e compreensíveis para o usuário, sem aplicar alteração parcial e sem exibir texto cru de erro do banco. No formulário de tipo de projeto, quando o nome informado for `Torre`, o campo limite de parcelas MUST oferecer somente as opções 1, 2 e 3; para os demais nomes, o campo permanece livre com valor mínimo 1. O formulário de tipo de projeto MUST conter apenas os campos Nome e Limite de parcelas, e o nome do tipo MUST NOT derivar nenhum comportamento de formulário (nenhuma regra de faixa nem de indicador PPI).
@@ -54,9 +39,8 @@ Os formulários MUST validar localmente o formato dos campos — CNPJ opcional s
 - **WHEN** o ADM consulta a listagem de tipos de projeto
 - **THEN** as colunas exibem nome, limite de parcelas e situação, sem colunas de faixa nem de próximo número
 
-### Requirement: Seleção restrita a cadastros ativos
-Os seletores de cliente, operadora e tipo em novos projetos MUST oferecer somente cadastros ativos.
+## REMOVED Requirements
 
-#### Scenario: Cadastro inativo fora da seleção
-- **WHEN** o ADM monta um novo projeto
-- **THEN** clientes, operadoras e tipos inativos não aparecem como opção
+### Requirement: Próximo número automático do tipo de projeto
+**Reason**: A numeração de projetos deixa de ser por faixa de tipo de projeto; não existe mais faixa nem contador por tipo. O controle da numeração migra para a sequência anual global, especificada na capability `fluxo-projetos`. O conceito de indicador PPI, que só governava faixas, deixa de existir.
+**Migration**: As colunas de faixa e de próximo número (e o indicador PPI derivado) são removidas de `tipo_projeto` no banco; a listagem de tipos deixa de exibir as colunas Faixa e Próximo nº, e o formulário de tipos deixa de auto-preencher valores a partir do nome. Nenhuma ação do usuário é necessária.

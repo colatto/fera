@@ -42,25 +42,10 @@ import {
 } from "@/queries/cadastros"
 
 // Regras locais do formulário (spec cadastros-basicos), espelhando as constraints
-// do banco: faixa inclusiva/limite de parcelas/PPI (derivado do nome) e Torre com
-// limite entre 1 e 3 parcelas. O próximo número é mantido pelo banco (nasce =
-// faixa inicial, só cresce).
-const ehNomePpi = (nome: string) => nome.trim().toLowerCase() === "ppi"
-
+// do banco: nome obrigatório, limite de parcelas mínimo 1 e Torre com limite
+// entre 1 e 3. A numeração dos projetos é sequencial anual e independe do tipo.
 function validarTipo(valores: ValoresTipoProjeto): string | null {
   if (!valores.nome.trim()) return "Informe o nome do tipo."
-  if (ehNomePpi(valores.nome)) {
-    if (valores.faixa_inicial < 5001) return "Tipo PPI: a faixa inicial deve ser 5001 ou maior."
-    if (valores.faixa_final !== null && valores.faixa_final < valores.faixa_inicial)
-      return "A faixa final deve ser maior ou igual à inicial."
-  } else {
-    if (valores.faixa_inicial < 0 || valores.faixa_inicial > 5000)
-      return "Tipo não PPI: a faixa inicial deve ficar entre 0 e 5000."
-    if (valores.faixa_final === null || valores.faixa_final > 5000)
-      return "Tipo não PPI: a faixa final é obrigatória e deve ficar até 5000."
-    if (valores.faixa_final < valores.faixa_inicial)
-      return "A faixa final deve ser maior ou igual à inicial."
-  }
   if (valores.limite_parcelas < 1) return "O limite de parcelas deve ser no mínimo 1."
   if (valores.nome.trim().toLowerCase() === "torre" && (valores.limite_parcelas > 3 || valores.limite_parcelas < 1))
     return "O tipo Torre deve ter limite de parcelas entre 1 e 3."
@@ -79,8 +64,6 @@ function DialogTipo({
   const queryClient = useQueryClient()
   const [valores, setValores] = useState<ValoresTipoProjeto>({
     nome: edicao?.nome ?? "",
-    faixa_inicial: edicao?.faixa_inicial ?? 0,
-    faixa_final: edicao?.faixa_final ?? 5000,
     limite_parcelas: edicao?.limite_parcelas ?? 1,
   })
 
@@ -90,11 +73,7 @@ function DialogTipo({
 
   const mutacao = useMutation({
     mutationFn: async () => {
-      const limpos: ValoresTipoProjeto = {
-        ...valores,
-        nome: valores.nome.trim(),
-        faixa_final: valores.faixa_final === null ? null : Number(valores.faixa_final),
-      }
+      const limpos: ValoresTipoProjeto = { ...valores, nome: valores.nome.trim() }
       if (edicao) await atualizarTipoProjeto(edicao.id, limpos)
       else await inserirTipoProjeto(limpos)
     },
@@ -103,7 +82,7 @@ function DialogTipo({
       toast.success(edicao ? "Tipo de projeto atualizado." : "Tipo de projeto criado.")
       aoFechar()
     },
-    // Sobreposição de faixa, unicidade de nome e demais restrições chegam do banco.
+    // Unicidade de nome e demais restrições chegam do banco.
     onError: (erro) => toast.error(mensagemDeErro(erro)),
   })
 
@@ -115,9 +94,7 @@ function DialogTipo({
         <DialogHeader>
           <DialogTitle>{edicao ? "Editar tipo de projeto" : "Novo tipo de projeto"}</DialogTitle>
           <DialogDescription>
-            Faixas de numeração não podem se sobrepor. Tipos chamados PPI usam faixa a partir de
-            5001 (final opcional); os demais ficam em 0–5000. O tipo Torre exige limite de
-            parcelas entre 1 e 3.
+            O tipo Torre exige limite de parcelas entre 1 e 3.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -126,46 +103,14 @@ function DialogTipo({
             <Input
               id="tipo-nome"
               value={valores.nome}
-              onChange={(e) => {
-                const nome = e.target.value
-                setValores((atual) => {
-                  // Borda de subida (não PPI → PPI): aplica os padrões canônicos
-                  // de PPI. A transição inversa não restaura valores; a validação
-                  // local bloqueia faixas inconsistentes com o novo nome.
-                  if (!ehNomePpi(atual.nome) && ehNomePpi(nome))
-                    return { ...atual, nome, faixa_inicial: 5001, faixa_final: null }
-                  return { ...atual, nome }
-                })
-              }}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tipo-inicial">Faixa inicial</Label>
-            <Input
-              id="tipo-inicial"
-              type="number"
-              value={valores.faixa_inicial}
-              onChange={(e) => mudar("faixa_inicial", Number(e.target.value))}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="tipo-final">
-              Faixa final {ehNomePpi(valores.nome) ? "(opcional)" : ""}
-            </Label>
-            <Input
-              id="tipo-final"
-              type="number"
-              value={valores.faixa_final ?? ""}
-              onChange={(e) =>
-                mudar("faixa_final", e.target.value === "" ? null : Number(e.target.value))
-              }
+              onChange={(e) => mudar("nome", e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tipo-parcelas">Limite de parcelas</Label>
             {valores.nome.trim().toLowerCase() === "torre" ? (
               // Torre: select restrito a 1–3 (espelha a constraint do banco). Sem
-              // reset de valor: se o valor atual está fora da faixa (ex.: rename
+              // reset de valor: se o valor atual está fora de 1–3 (ex.: rename
               // para Torre com 5), o select fica sem opção e a validação bloqueia.
               <Select
                 value={String(valores.limite_parcelas)}
@@ -208,11 +153,6 @@ function DialogTipo({
   )
 }
 
-const rotuloFaixa = (tipo: TipoProjeto) =>
-  tipo.faixa_final === null
-    ? `${tipo.faixa_inicial}+`
-    : `${tipo.faixa_inicial}–${tipo.faixa_final}`
-
 export function TiposProjeto() {
   const queryClient = useQueryClient()
   const consulta = useQuery({ queryKey: chavesCadastros.tipos(), queryFn: listarTipos })
@@ -235,7 +175,7 @@ export function TiposProjeto() {
         <div>
           <h1 className="text-xl font-semibold">Tipos de projeto</h1>
           <p className="text-sm text-muted-foreground">
-            Faixas de numeração dos códigos F-AAAA-NNNN por tipo.
+            Tipos usados nos códigos F-AAAA-NNNN dos projetos.
           </p>
         </div>
         <Button
@@ -262,8 +202,6 @@ export function TiposProjeto() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Nome</TableHead>
-                  <TableHead>Faixa</TableHead>
-                  <TableHead>Próximo nº</TableHead>
                   <TableHead>Parcelas</TableHead>
                   <TableHead>Situação</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -273,8 +211,6 @@ export function TiposProjeto() {
                 {(consulta.data ?? []).map((tipo) => (
                   <TableRow key={tipo.id}>
                     <TableCell className="font-medium">{tipo.nome}</TableCell>
-                    <TableCell className="font-mono text-xs">{rotuloFaixa(tipo)}</TableCell>
-                    <TableCell>{tipo.proximo_numero}</TableCell>
                     <TableCell>{tipo.limite_parcelas}</TableCell>
                     <TableCell>
                       <Badge

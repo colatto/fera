@@ -137,7 +137,7 @@ export function ProjetoNovo() {
               <SelectContent>
                 {apenasAtivos(tipos.data ?? []).map((tipo) => (
                   <SelectItem key={tipo.id} value={String(tipo.id)}>
-                    {tipo.nome} — próximo número {tipo.proximo_numero}
+                    {tipo.nome}
                   </SelectItem>
                 ))}
               </SelectContent>

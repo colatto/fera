@@ -48,8 +48,8 @@ Os nomes físicos são `snake_case`. Entidades de negócio usam `bigint generate
 
 - `usuario`: `id`, `perfil`, `nome`, `email`, `ativo` e auditoria. Senhas pertencem exclusivamente ao Supabase Auth.
 - `cliente`, `operadora` e `tipo_projeto`: cadastros inativáveis. CNPJ é opcional, somente dígitos e único quando presente. Operadora e tipo possuem nome único. Cadastros inativos não podem ser selecionados para novos projetos e só ADM os visualiza diretamente para manutenção.
-- `tipo_projeto`: possui faixa inclusiva, próximo número, limite de parcelas e `is_ppi`. Faixas não PPI ficam em `0–5000`; PPI começa em `5001`; exclusão GiST impede sobreposição. O tipo cujo nome seja `Torre` deve possuir `limite_parcelas` entre 1 e 3.
-- `projeto`: número global único, ano, código único, cliente, operadora, identificadores, localização, responsável, status, OC opcional, compatibilização auditada e criador obrigatório.
+- `tipo_projeto`: possui nome único e limite de parcelas. O tipo cujo nome seja `Torre` deve possuir `limite_parcelas` entre 1 e 3.
+- `projeto`: ano, número sequencial anual (único por ano e número), código único, cliente, operadora, identificadores, localização, responsável, status, OC opcional, compatibilização auditada e criador obrigatório.
 - `nota_fiscal`: pertence a exatamente um projeto, tem valor positivo e é a fonte financeira oficial. Previsão é calculada como `data_emissao + 30 dias`, sem persistência.
 - `recebimento`: pertence a uma nota, tem data/valor positivo, respeita limite de parcelas e nunca ultrapassa a nota.
 - `evento_projeto`: contém criação, alterações operacionais e status; não pode ser editado/excluído e `detalhes` não pode conter chaves financeiras.
@@ -65,7 +65,7 @@ Consultas e exportação usam filtros combináveis por código, cliente, identif
 ## Aceitação
 
 - RLS impede consulta financeira e escrita administrativa por OPER.
-- Criações concorrentes não duplicam número nem ultrapassam faixa.
+- Criações concorrentes não duplicam número: a numeração é um sequencial anual global (`F-AAAA-NNNN`, reiniciando em `0001` a cada ano), alocada transacionalmente na `sequencia_projeto`, compartilhada por todos os tipos de projeto.
 - Estados dependentes só são alcançados pelas RPCs que registram seus documentos.
 - Eventos, dados de auditoria, cancelamento, substituição, pagamentos parciais, limite de parcelas e quitação são validados no banco.
 - Views operacionais não expõem documentos ou valores financeiros, e views administrativas retornam conjunto vazio para não-ADM.

@@ -25,15 +25,9 @@ create table public.operadora (
 );
 create table public.tipo_projeto (
   id bigint generated always as identity primary key, nome varchar(100) not null unique,
-  is_ppi boolean generated always as (lower(nome) = 'ppi') stored,
-  faixa_inicial integer not null, faixa_final integer,
-  faixa int4range generated always as (int4range(faixa_inicial, case when faixa_final is null then null else faixa_final + 1 end, '[)')) stored,
-  proximo_numero integer not null, limite_parcelas smallint not null default 1 check (limite_parcelas > 0), ativo boolean not null default true,
+  limite_parcelas smallint not null default 1 check (limite_parcelas > 0), ativo boolean not null default true,
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
-  constraint tipo_faixa_valida check ((not is_ppi and faixa_inicial between 0 and 5000 and faixa_final between faixa_inicial and 5000) or (is_ppi and faixa_inicial >= 5001 and (faixa_final is null or faixa_final >= faixa_inicial))),
-  constraint tipo_proximo_valido check (proximo_numero >= faixa_inicial and (faixa_final is null or proximo_numero <= faixa_final + 1)),
-  constraint tipo_torre_limite_parcelas check (lower(nome) <> 'torre' or limite_parcelas between 1 and 3),
-  constraint tipo_faixas_sem_sobreposicao exclude using gist (faixa with &&)
+  constraint tipo_torre_limite_parcelas check (lower(nome) <> 'torre' or limite_parcelas between 1 and 3)
 );
 create table public.ordem_compra (
   id bigint generated always as identity primary key, numero varchar(100) not null, data_oc date not null,
@@ -41,7 +35,7 @@ create table public.ordem_compra (
   constraint ordem_compra_numero_normalizada check (numero = btrim(numero)), constraint ordem_compra_numero_unico unique (numero)
 );
 create table public.projeto (
-  id bigint generated always as identity primary key, numero integer not null unique check (numero >= 0), ano smallint not null check (ano between 2000 and 9999),
+  id bigint generated always as identity primary key, numero integer not null check (numero >= 1), ano smallint not null check (ano between 2000 and 9999),
   codigo_pasta varchar(20) not null unique check (codigo_pasta ~ '^F-[0-9]{4}-[0-9]{4,}$'),
   tipo_projeto_id bigint not null references public.tipo_projeto(id) on delete restrict, cliente_id bigint not null references public.cliente(id) on delete restrict,
   identificador_cliente varchar(100) not null, operadora_id bigint not null references public.operadora(id) on delete restrict, identificador_operadora varchar(100) not null,
@@ -52,7 +46,13 @@ create table public.projeto (
   criado_por uuid not null references public.usuario(id) on delete restrict,
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
   constraint projeto_envio_por_status check (status in ('CADASTRADO', 'CANCELADO') or data_envio is not null),
-  constraint projeto_fundacao_auditada check ((not fundacao_compatibilizada and fundacao_compatibilizada_por is null and fundacao_compatibilizada_em is null) or (fundacao_compatibilizada and fundacao_compatibilizada_por is not null and fundacao_compatibilizada_em is not null))
+  constraint projeto_fundacao_auditada check ((not fundacao_compatibilizada and fundacao_compatibilizada_por is null and fundacao_compatibilizada_em is null) or (fundacao_compatibilizada and fundacao_compatibilizada_por is not null and fundacao_compatibilizada_em is not null)),
+  constraint projeto_ano_numero_key unique (ano, numero)
+);
+create table public.sequencia_projeto (
+  ano smallint primary key check (ano between 2000 and 9999),
+  proximo_numero integer not null default 1 check (proximo_numero >= 1),
+  atualizado_em timestamptz not null default now()
 );
 create table public.autorizacao_faturamento (
   id bigint generated always as identity primary key, projeto_id bigint not null unique references public.projeto(id) on delete restrict,
@@ -107,24 +107,6 @@ create trigger usuario_garante_adm before update on public.usuario for each row 
 create trigger cliente_atualizado before update on public.cliente for each row execute function public.fn_atualizar_timestamp();
 create trigger operadora_atualizado before update on public.operadora for each row execute function public.fn_atualizar_timestamp();
 create trigger tipo_atualizado before update on public.tipo_projeto for each row execute function public.fn_atualizar_timestamp();
--- Próximo número do tipo de projeto é estado exclusivamente do sistema: INSERT nasce
--- igual à faixa_inicial; UPDATE só cresce (guarda monotônica) e é elevado
--- automaticamente quando a faixa_inicial sobe acima do contador corrente.
-create or replace function public.fn_proximo_automatico() returns trigger language plpgsql as $$
-begin
-  if tg_op = 'INSERT' then
-    new.proximo_numero := new.faixa_inicial;
-  else
-    if new.proximo_numero < old.proximo_numero then
-      raise exception 'O próximo número não pode ser reduzido manualmente';
-    end if;
-    if new.faixa_inicial > new.proximo_numero then
-      new.proximo_numero := new.faixa_inicial;
-    end if;
-  end if;
-  return new;
-end; $$;
-create trigger tipo_proximo_automatico before insert or update on public.tipo_projeto for each row execute function public.fn_proximo_automatico();
 create trigger oc_atualizada before update on public.ordem_compra for each row execute function public.fn_atualizar_timestamp();
 create trigger projeto_atualizado before update on public.projeto for each row execute function public.fn_atualizar_timestamp();
 create trigger nota_atualizada before update on public.nota_fiscal for each row execute function public.fn_atualizar_timestamp();
@@ -143,15 +125,16 @@ returns bigint language plpgsql security definer set search_path = public, auth 
 declare v_tipo public.tipo_projeto%rowtype; v_numero integer; v_id bigint; v_ano smallint := extract(year from current_date)::smallint;
 begin
   if not public.usuario_adm() then raise exception 'Apenas ADM pode cadastrar projetos' using errcode = '42501'; end if;
-  select * into v_tipo from public.tipo_projeto where id = p_tipo_id and ativo for update;
+  select * into v_tipo from public.tipo_projeto where id = p_tipo_id and ativo;
   if not found then raise exception 'Tipo inexistente ou inativo'; end if;
-  if v_tipo.faixa_final is not null and v_tipo.proximo_numero > v_tipo.faixa_final then raise exception 'Faixa esgotada'; end if;
   perform 1 from public.cliente where id = p_cliente_id and ativo;
   if not found then raise exception 'Cliente inexistente ou inativo'; end if;
   perform 1 from public.operadora where id = p_operadora_id and ativo;
   if not found then raise exception 'Operadora inexistente ou inativa'; end if;
   perform 1 from public.usuario where id = p_responsavel_id and ativo; if not found then raise exception 'Responsável inexistente ou inativo'; end if;
-  v_numero := v_tipo.proximo_numero; update public.tipo_projeto set proximo_numero = v_numero + 1 where id = v_tipo.id;
+  insert into public.sequencia_projeto(ano, proximo_numero) values (v_ano, 1)
+  on conflict (ano) do update set proximo_numero = sequencia_projeto.proximo_numero + 1, atualizado_em = now()
+  returning proximo_numero into v_numero;
   insert into public.projeto(numero, ano, codigo_pasta, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, valor, responsavel_interno_id, criado_por)
   values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_valor, p_responsavel_id, auth.uid()) returning id into v_id;
   insert into public.evento_projeto(projeto_id, realizado_por, tipo, detalhes) values(v_id, auth.uid(), 'CRIACAO', jsonb_build_object('origem','cadastro'));
