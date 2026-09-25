@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/ui/password-input"
 import type { SessaoAtual } from "@/lib/auth"
 import { ROTULOS_PERFIL } from "@/lib/constantes"
 import { mensagemDeErro } from "@/lib/formato"
@@ -26,13 +27,9 @@ export function MinhaSenha() {
   const { usuario } = useRouteLoaderData("shell") as SessaoAtual
   const [senhaAtual, setSenhaAtual] = useState("")
   const [novaSenha, setNovaSenha] = useState("")
-  const [confirmacao, setConfirmacao] = useState("")
   const [processando, setProcessando] = useState(false)
 
-  const valido =
-    senhaAtual !== "" &&
-    novaSenha.length >= SENHA_MINIMA &&
-    novaSenha === confirmacao
+  const valido = senhaAtual !== "" && novaSenha.length >= SENHA_MINIMA
 
   async function submeter() {
     setProcessando(true)
@@ -54,7 +51,6 @@ export function MinhaSenha() {
       toast.success("Senha alterada. Use a nova senha no próximo login.")
       setSenhaAtual("")
       setNovaSenha("")
-      setConfirmacao("")
     } finally {
       setProcessando(false)
     }
@@ -89,27 +85,13 @@ export function MinhaSenha() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="senha-nova">Nova senha (mínimo {SENHA_MINIMA} caracteres)</Label>
-            <Input
+            <PasswordInput
               id="senha-nova"
-              type="password"
               autoComplete="new-password"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="senha-confirmacao">Confirmar nova senha</Label>
-            <Input
-              id="senha-confirmacao"
-              type="password"
-              autoComplete="new-password"
-              value={confirmacao}
-              onChange={(e) => setConfirmacao(e.target.value)}
-            />
-          </div>
-          {confirmacao !== "" && novaSenha !== confirmacao ? (
-            <p className="text-sm text-destructive">As senhas não coincidem.</p>
-          ) : null}
         </CardContent>
         <CardFooter>
           <Button disabled={!valido || processando} onClick={() => void submeter()}>

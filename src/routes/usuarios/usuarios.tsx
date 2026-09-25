@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/ui/password-input"
 import {
   Select,
   SelectContent,
@@ -135,9 +136,8 @@ function DialogNovoUsuario({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="novo-senha">Senha inicial</Label>
-            <Input
+            <PasswordInput
               id="novo-senha"
-              type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
             />
@@ -283,9 +283,8 @@ function DialogEditarUsuario({
           {redefinicaoAberta ? (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="nova-senha">Nova senha</Label>
-              <Input
+              <PasswordInput
                 id="nova-senha"
-                type="password"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
               />
