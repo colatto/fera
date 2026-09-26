@@ -23,10 +23,10 @@ export function RodapeSistema({ alinhadoDireita = false }: { alinhadoDireita?: b
       </a>
       {" © "}
       {new Date().getFullYear()}
-      <span className="hidden sm:inline"> F.E.R.A. Projetos e Engenharia</span>
-      {" · v"}
+      <span className="hidden sm:inline"> - F.E.R.A. Projetos e Engenharia</span>
+      {" - v "}
       {__VERSAO_APP__}
-      {" · "}
+      {" - "}
       <a href={URL_SUPORTE_R3} target="_blank" rel="noopener noreferrer" className={cn(CLASSE_LINK, "hidden sm:inline")}>
         Solicitar suporte
       </a>
