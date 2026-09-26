@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RodapeSistema } from "@/components/rodape-sistema"
 import { mensagemLogin } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
@@ -96,6 +97,7 @@ export function TelaLogin() {
           </form>
         </CardContent>
       </Card>
+      <RodapeSistema />
     </div>
   )
 }

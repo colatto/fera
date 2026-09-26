@@ -1,9 +1,20 @@
+import { readFileSync } from "node:fs"
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
+// Versão exibida no rodapé institucional (spec interface-web): cada commit
+// carrega a própria versão — o hook de pre-commit avança o contador no
+// package.json; o build apenas lê o valor, sem tocar no git.
+const { version: versaoApp } = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, "package.json"), "utf8"),
+) as { version: string }
+
 export default defineConfig({
+  define: {
+    __VERSAO_APP__: JSON.stringify(versaoApp),
+  },
   plugins: [
     react(),
     tailwindcss(),

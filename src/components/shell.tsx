@@ -11,6 +11,7 @@ import {
   Wallet,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { RodapeSistema } from "@/components/rodape-sistema"
 import { ROTULOS_PERFIL, type Perfil } from "@/lib/constantes"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -121,8 +122,17 @@ export function Shell() {
           </Button>
         </div>
       </aside>
-      <main className="min-h-0 min-w-0 flex-1 bg-navy-deep px-4 py-6 md:px-8">
-        <Outlet />
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-navy-deep px-4 py-6 md:px-8">
+        <div className="min-w-0 flex-1">
+          <Outlet />
+        </div>
+        {/* Rodapé institucional (spec interface-web): fora da sidebar, colado no
+            canto inferior direito e sempre visível na rolagem. As margens
+            negativas cobrem o padding do main para a faixa alcançar as bordas;
+            o fundo sólido evita que o conteúdo rolado apareça por baixo. */}
+        <div className="sticky bottom-0 -mx-4 -mb-6 bg-navy-deep px-4 py-3 md:-mx-8 md:px-8">
+          <RodapeSistema alinhadoDireita />
+        </div>
       </main>
     </div>
   )

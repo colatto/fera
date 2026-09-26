@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Cada commit soma 1 na versão do package.json (spec interface-web). O hook
+# roda a partir da raiz da árvore de trabalho; o incremento entra no próprio
+# commit. Commits com --no-verify ou feitos sem este hook não avançam o contador.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+node .githooks/incrementa-versao.mjs
+git add package.json

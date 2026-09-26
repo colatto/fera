@@ -54,6 +54,7 @@ Toda mudança de status gera evento imutável exibido na linha do tempo do proje
 ├── banco.sql            # referência declarativa versionada do estado esperado do banco
 ├── requisitos.md        # requisitos do sistema
 ├── openspec/            # especificações e changes (fluxo spec-driven)
+├── .githooks/           # hooks de git (pre-commit: versão +1 por commit)
 ├── vite.config.ts       # Vite + Tailwind + alias @/ + CSP (produção no index.html)
 └── vercel.json          # build estático + rewrite SPA
 ```
@@ -106,3 +107,19 @@ Toda mudança de status gera evento imutável exibido na linha do tempo do proje
 ### Implantação
 
 Deploy estático na **Vercel** (`vite build`, output `dist/`, rewrite SPA para rotas client-side — ver `vercel.json`). As variáveis `VITE_SUPABASE_*` devem estar configuradas no ambiente da Vercel.
+
+## Versionamento por commit
+
+A versão exibida no rodapé do sistema é o campo `version` do `package.json` do commit construído (injetada no build). Cada novo commit soma **1** no contador, ignorando o histórico de commits, com carry de dígito a cada 9:
+
+```
+v0.1.0 → v0.1.1 → … → v0.1.9 → v0.2.0 → … → v0.9.9 → v1.0.0 → … → v1.9.9 → v2.0.0
+```
+
+O incremento é feito pelo hook de pre-commit em `.githooks/`. Ativação única por clone (configuração local, não versionada pelo git):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Sem o hook ativo (ou com `--no-verify`), o commit entra sem avançar a versão.
