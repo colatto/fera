@@ -2,8 +2,6 @@
 -- Não é mecanismo de deploy: toda alteração e validação ocorre somente pelo MCP Supabase no projeto remoto.
 -- Não criar/remover bancos, ambientes, schemas ou auth.users localmente.
 
-create extension if not exists btree_gist;
-
 create type public.app_role as enum ('ADM', 'OPER');
 create type public.project_status as enum ('CADASTRADO', 'ENVIADO', 'OC_REGISTRADA', 'AUTORIZADO_FATURAMENTO', 'NOTA_EMITIDA', 'PAGO', 'CANCELADO');
 create type public.project_event_type as enum ('CRIACAO', 'ALTERACAO_CADASTRAL', 'ALTERACAO_STATUS', 'COMPATIBILIZACAO_FUNDACAO');
