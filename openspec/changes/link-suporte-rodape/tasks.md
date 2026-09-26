@@ -25,4 +25,4 @@
 ## 6. Validação integrada
 
 - [x] 6.1 Confirmar `npm run build` e tipagem sem erros e validar os cenários da delta spec: linha completa abaixo da modal no login, linha completa no canto inferior direito do shell sempre visível, forma encurtada em viewport estreito, ano corrente, dois links em nova aba e versão igual no login e no shell
-- [ ] 6.2 Validar o ciclo de versionamento ponta a ponta: commit do feature exibindo v0.1.0, ativação do hook (`git config core.hooksPath .githooks`) e commit seguinte entrando com v0.1.1 (conferir `package.json` e o bundle)
+- [x] 6.2 Validar o ciclo de versionamento ponta a ponta: commit do feature exibindo v0.1.0, ativação do hook (`git config core.hooksPath .githooks`) e commit seguinte entrando com v0.1.1 (conferir `package.json` e o bundle)
