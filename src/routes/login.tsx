@@ -54,12 +54,18 @@ export function TelaLogin() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-background px-4">
-      <img src="/feralogo.jpg" alt="Fera" className="w-56 max-w-full rounded-lg" />
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-[oklch(0.322_0.054_268.8)] px-4">
+      <Card className="w-full max-w-sm bg-[oklch(0.363_0.079_264.8)]">
+        <img
+          src="/feralogo.jpg"
+          alt="Fera"
+          className="mx-auto w-56 max-w-full rounded-lg"
+        />
         <CardHeader>
-          <CardTitle>Acesso ao sistema</CardTitle>
-          <CardDescription>Entre com suas credenciais para continuar.</CardDescription>
+          <CardTitle className="text-center">Acesso ao sistema</CardTitle>
+          <CardDescription className="text-center">
+            Entre com suas credenciais para continuar.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={aoSubmeter} className="flex flex-col gap-4" noValidate>
