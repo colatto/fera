@@ -81,13 +81,16 @@ export function MinhaSenha() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="senha-nova">Nova senha (mínimo {SENHA_MINIMA} caracteres)</Label>
+            <Label htmlFor="senha-nova">Nova senha</Label>
             <PasswordInput
               id="senha-nova"
               autoComplete="new-password"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Mínimo 6 caracteres, com minúscula, maiúscula, dígito e símbolo.
+            </p>
           </div>
         </CardContent>
         <CardFooter>

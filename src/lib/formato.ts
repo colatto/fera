@@ -119,6 +119,8 @@ const MENSAGENS_AUTH: Record<string, string> = {
   current_password_invalid: "Credencial atual não comprovada. Verifique a senha atual.",
   current_password_required: "Credencial atual não comprovada. Verifique a senha atual.",
   same_password: "A nova senha deve ser diferente da senha atual.",
+  weak_password:
+    "A senha deve ter ao menos 6 caracteres e conter pelo menos uma letra minúscula, uma maiúscula, um dígito e um símbolo.",
 }
 
 // details chega como `Key (nome)=(Vivo) already exists.`; sem details, degrada

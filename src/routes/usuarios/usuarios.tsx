@@ -105,7 +105,7 @@ function DialogNovoUsuario({
           <DialogTitle>Novo usuário</DialogTitle>
           <DialogDescription>
             A credencial é criada confirmada; a senha inicial deve ter ao menos {SENHA_MINIMA}{" "}
-            caracteres.
+            caracteres, com minúscula, maiúscula, dígito e símbolo.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
@@ -289,8 +289,8 @@ function DialogEditarUsuario({
                 onChange={(e) => setSenha(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Ao menos {SENHA_MINIMA} caracteres. As sessões do usuário serão revogadas; usuário
-                inativo não é reativado.
+                Mínimo 6 caracteres, com minúscula, maiúscula, dígito e símbolo. As sessões do
+                usuário serão revogadas; usuário inativo não é reativado.
               </p>
               <div className="flex gap-2">
                 <Button
