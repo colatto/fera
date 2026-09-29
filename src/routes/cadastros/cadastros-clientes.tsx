@@ -33,13 +33,18 @@ import {
   type Cliente,
 } from "@/queries/cadastros"
 
-// CNPJ opcional, somente dígitos (spec cadastros-basicos): pontuação é bloqueada
-// localmente antes de qualquer chamada ao banco.
-const apenasDigitosCnpj = (valor: string) => /^\d{0,14}$/.test(valor)
+// CNPJ opcional, alfanumérico da RFB (spec cadastros-basicos): 12 posições com
+// números e letras maiúsculas (exceto I, O, U, Q e F) e 2 dígitos no final.
+// Minúsculas viram maiúsculas antes de validar; o que não casa com o formato é
+// bloqueado no onChange, sem alterar o que já está digitado.
+const cnpjAlfanumericoValido = (valor: string) =>
+  /^[0-9A-EHJ-NPR-TV-Z]{0,14}$/.test(valor.toUpperCase())
 
 function validarCliente(nome: string, cnpj: string): string | null {
   if (!nome.trim()) return "Informe o nome do cliente."
-  if (cnpj.length > 0 && cnpj.length !== 14) return "O CNPJ deve ter exatamente 14 dígitos."
+  if (cnpj.length > 0 && cnpj.length !== 14) {
+    return "O CNPJ deve ter 14 caracteres: números e letras maiúsculas (exceto I, O, U, Q e F) nas 12 primeiras posições e dois dígitos no final."
+  }
   return null
 }
 
@@ -79,7 +84,7 @@ function DialogCliente({
         <DialogHeader>
           <DialogTitle>{edicao ? "Editar cliente" : "Novo cliente"}</DialogTitle>
           <DialogDescription>
-            Nome obrigatório. CNPJ opcional com 14 dígitos, sem pontuação.
+            Nome obrigatório. CNPJ opcional alfanumérico com 14 caracteres, sem pontuação.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
@@ -91,15 +96,16 @@ function DialogCliente({
             <Label htmlFor="cliente-cnpj">CNPJ (opcional)</Label>
             <Input
               id="cliente-cnpj"
-              inputMode="numeric"
               value={cnpj}
-              placeholder="Somente 14 dígitos"
+              placeholder="Ex.: 12ABC34501DE35"
               onChange={(e) => {
-                if (apenasDigitosCnpj(e.target.value)) setCnpj(e.target.value)
+                const valor = e.target.value.toUpperCase()
+                if (cnpjAlfanumericoValido(valor)) setCnpj(valor)
               }}
             />
           </div>
         </div>
+        {erroLocal ? <p className="text-sm text-destructive">{erroLocal}</p> : null}
         <DialogFooter>
           <Button variant="outline" onClick={aoFechar}>
             Voltar

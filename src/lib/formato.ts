@@ -83,6 +83,12 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
     comValor: "Já existe um cliente cadastrado com o CNPJ X.",
     semValor: "Já existe um cliente cadastrado com este CNPJ.",
   },
+  cliente_cnpj_formato: {
+    comValor:
+      "O CNPJ deve ter 14 caracteres alfanuméricos: números e letras maiúsculas (exceto I, O, U, Q e F) nas 12 primeiras posições e dois dígitos no final.",
+    semValor:
+      "O CNPJ deve ter 14 caracteres alfanuméricos: números e letras maiúsculas (exceto I, O, U, Q e F) nas 12 primeiras posições e dois dígitos no final.",
+  },
   tipo_projeto_nome_key: {
     comValor: 'Já existe um tipo de projeto com o nome "X".',
     semValor: "Já existe um tipo de projeto com este nome.",

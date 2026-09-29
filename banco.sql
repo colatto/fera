@@ -14,7 +14,7 @@ create table public.usuario (
 create table public.cliente (
   id bigint generated always as identity primary key, nome varchar(150) not null, cnpj varchar(14), ativo boolean not null default true,
   criado_em timestamptz not null default now(), atualizado_em timestamptz not null default now(),
-  constraint cliente_cnpj_formato check (cnpj is null or cnpj ~ '^[0-9]{14}$')
+  constraint cliente_cnpj_formato check (cnpj is null or cnpj ~ '^[0-9A-EHJ-NPR-TV-Z]{12}[0-9]{2}$')
 );
 create unique index cliente_cnpj_unico on public.cliente (cnpj) where cnpj is not null;
 create table public.operadora (
