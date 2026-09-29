@@ -21,8 +21,9 @@ import { supabase } from "@/lib/supabase"
 const SENHA_MINIMA = 6
 
 // Troca da própria senha (spec administracao-usuarios): o Supabase Auth exige
-// comprovação da credencial atual — feita por signInWithPassword prévio
-// (design D6). Dados de perfil em public.usuario não são alterados.
+// comprovação da credencial atual, validada pelo servidor na própria chamada
+// de troca via current_password. Dados de perfil em public.usuario não são
+// alterados.
 export function MinhaSenha() {
   const { usuario } = useRouteLoaderData("shell") as SessaoAtual
   const [senhaAtual, setSenhaAtual] = useState("")
@@ -34,16 +35,12 @@ export function MinhaSenha() {
   async function submeter() {
     setProcessando(true)
     try {
-      // Comprovação da credencial atual: recusa exibida, senha anterior mantida.
-      const { error: erroComprovacao } = await supabase.auth.signInWithPassword({
-        email: usuario.email,
-        password: senhaAtual,
+      // Comprovação da credencial atual é feita pelo servidor na própria
+      // chamada; recusas chegam como erro do Auth e viram mensagem amigável.
+      const { error } = await supabase.auth.updateUser({
+        password: novaSenha,
+        current_password: senhaAtual,
       })
-      if (erroComprovacao) {
-        toast.error("Credencial atual não comprovada. Verifique a senha atual.")
-        return
-      }
-      const { error } = await supabase.auth.updateUser({ password: novaSenha })
       if (error) {
         toast.error(mensagemDeErro(error))
         return

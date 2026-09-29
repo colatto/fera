@@ -88,7 +88,7 @@ A interface MUST permitir ao ADM redefinir a senha de qualquer usuário pela aç
 - **THEN** os botões de ação e o rodapé voltam a ser exibidos, os campos de perfil, nome e e-mail voltam a habilitar e os valores informados antes da revelação permanecem
 
 ### Requirement: Troca da própria senha
-A interface MUST permitir ao usuário autenticado ativo alterar a própria senha pelo Supabase Auth, informando a credencial atual; a troca MUST NOT alterar perfil, nome, e-mail ou status em `public.usuario`, e a recusa por credencial atual não comprovada MUST ser exibida. O campo de nova senha MUST oferecer um controle de alternância de exibição que revele e oculte o texto digitado, e a conferência do que foi digitado MUST ser feita por essa alternância: a interface MUST NOT apresentar campo de confirmação de senha nova.
+A interface MUST permitir ao usuário autenticado ativo alterar a própria senha pelo Supabase Auth, informando a credencial atual; a troca MUST NOT alterar perfil, nome, e-mail ou status em `public.usuario`, e a recusa por credencial atual não comprovada ou por nova senha igual à atual MUST ser exibida com mensagem amigável, sem a mensagem bruta do servidor. O campo de nova senha MUST oferecer um controle de alternância de exibição que revele e oculte o texto digitado, e a conferência do que foi digitado MUST ser feita por essa alternância: a interface MUST NOT apresentar campo de confirmação de senha nova.
 
 #### Scenario: Troca válida
 - **WHEN** o usuário ativo altera a própria senha informando a credencial atual correta
@@ -96,7 +96,11 @@ A interface MUST permitir ao usuário autenticado ativo alterar a própria senha
 
 #### Scenario: Credencial atual incorreta
 - **WHEN** a troca é tentada sem comprovar a credencial atual
-- **THEN** a operação é negada e a interface exibe a falha, mantendo a senha anterior
+- **THEN** a operação é negada e a interface exibe mensagem amigável de credencial não comprovada, sem a mensagem bruta do servidor, mantendo a senha anterior
+
+#### Scenario: Nova senha igual à atual
+- **WHEN** o usuário informa como nova senha a mesma credencial atual, correta
+- **THEN** a operação é negada e a interface exibe mensagem amigável de que a nova senha deve ser diferente da atual, mantendo a senha anterior
 
 #### Scenario: Conferência da senha nova
 - **WHEN** o usuário aciona a alternância de exibição no campo de nova senha

@@ -112,6 +112,15 @@ const MENSAGENS_CONSTRAINT: Record<string, { comValor: string; semValor: string 
 // Códigos Postgres traduzíveis: unique, exclusion e check (design D2).
 const CODIGOS_CONSTRAINT = new Set(["23505", "23P01", "23514"])
 
+// Erros do Auth traduzíveis: o auth-js copia o error_code do servidor para
+// AuthApiError.code, e o texto cru não distingue os casos (credencial
+// inválida e ausente chegam com o mesmo msg), então a tradução é só por código.
+const MENSAGENS_AUTH: Record<string, string> = {
+  current_password_invalid: "Credencial atual não comprovada. Verifique a senha atual.",
+  current_password_required: "Credencial atual não comprovada. Verifique a senha atual.",
+  same_password: "A nova senha deve ser diferente da senha atual.",
+}
+
 // details chega como `Key (nome)=(Vivo) already exists.`; sem details, degrada
 // para a forma sem valor (design D3).
 function valorDuplicado(details: unknown): string | null {
@@ -137,6 +146,12 @@ export function mensagemDeErro(erro: unknown): string {
         const valor = valorDuplicado(postgrest.details)
         return valor ? traducao.comValor.replace("X", () => valor) : traducao.semValor
       }
+    }
+    if (
+      typeof postgrest.code === "string" &&
+      MENSAGENS_AUTH[postgrest.code]
+    ) {
+      return MENSAGENS_AUTH[postgrest.code]
     }
     if ("message" in postgrest && typeof postgrest.message === "string" && postgrest.message) {
       return postgrest.message
