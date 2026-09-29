@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useRouteLoaderData } from "react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -32,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Carregando, ErroDeConsulta, Vazio } from "@/components/estados"
+import type { SessaoAtual } from "@/lib/auth"
 import { ROTULOS_PERFIL } from "@/lib/constantes"
 import {
   alterarUsuario,
@@ -170,6 +172,11 @@ function DialogEditarUsuario({
   const [redefinicaoAberta, setRedefinicaoAberta] = useState(false)
   const [senha, setSenha] = useState("")
 
+  // Identidade da sessão vem do loader da rota shell, como no restante do app;
+  // id nulo nunca é próprio — sem id não há como casar com a sessão (design D1 e D3).
+  const { usuario: usuarioSessao } = useRouteLoaderData("shell") as SessaoAtual
+  const ehProprioRegistro = usuario.id !== null && usuario.id === usuarioSessao.id
+
   const mutacao = useMutation({
     mutationFn: () =>
       alterarUsuario({
@@ -277,60 +284,66 @@ function DialogEditarUsuario({
             />
           </div>
         </div>
-        <Separator />
-        <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium">Ações do usuário</h3>
-          {redefinicaoAberta ? (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nova-senha">Nova senha</Label>
-              <PasswordInput
-                id="nova-senha"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Mínimo 6 caracteres, com minúscula, maiúscula, dígito e símbolo. As sessões do
-                usuário serão revogadas; usuário inativo não é reativado.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={mutacaoSenha.isPending}
-                  onClick={() => {
-                    setSenha("")
-                    setRedefinicaoAberta(false)
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  disabled={senha.length < SENHA_MINIMA || mutacaoSenha.isPending}
-                  onClick={() => mutacaoSenha.mutate()}
-                >
-                  Confirmar
-                </Button>
-              </div>
+        {/* Ações do usuário não existem sobre o próprio registro logado: o bloco
+            inteiro some (design D2) e a redefinição fica inalcançável aqui. */}
+        {!ehProprioRegistro ? (
+          <>
+            <Separator />
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium">Ações do usuário</h3>
+              {redefinicaoAberta ? (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="nova-senha">Nova senha</Label>
+                  <PasswordInput
+                    id="nova-senha"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Mínimo 6 caracteres, com minúscula, maiúscula, dígito e símbolo. As sessões do
+                    usuário serão revogadas; usuário inativo não é reativado.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={mutacaoSenha.isPending}
+                      onClick={() => {
+                        setSenha("")
+                        setRedefinicaoAberta(false)
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      disabled={senha.length < SENHA_MINIMA || mutacaoSenha.isPending}
+                      onClick={() => mutacaoSenha.mutate()}
+                    >
+                      Confirmar
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+              {/* Modo exclusivo de redefinição: ações e rodapé ocultos enquanto o
+                  campo de nova senha está revelado (spec administracao-usuarios). */}
+              {!redefinicaoAberta ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setRedefinicaoAberta(true)}>
+                    Redefinir senha
+                  </Button>
+                  <Button
+                    variant={usuario.ativo ? "destructive" : "outline"}
+                    size="sm"
+                    disabled={mutacaoSituacao.isPending}
+                    onClick={() => mutacaoSituacao.mutate(!usuario.ativo)}
+                  >
+                    {usuario.ativo ? "Inativar" : "Reativar"}
+                  </Button>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-          {/* Modo exclusivo de redefinição: ações e rodapé ocultos enquanto o
-              campo de nova senha está revelado (spec administracao-usuarios). */}
-          {!redefinicaoAberta ? (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setRedefinicaoAberta(true)}>
-                Redefinir senha
-              </Button>
-              <Button
-                variant={usuario.ativo ? "destructive" : "outline"}
-                size="sm"
-                disabled={mutacaoSituacao.isPending}
-                onClick={() => mutacaoSituacao.mutate(!usuario.ativo)}
-              >
-                {usuario.ativo ? "Inativar" : "Reativar"}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+          </>
+        ) : null}
         {!redefinicaoAberta ? (
           <DialogFooter>
             <Button variant="outline" onClick={aoFechar}>
