@@ -880,6 +880,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      editar_pasta_local: {
+        Args: { p_id: number; p_pasta_local: string }
+        Returns: undefined
+      }
       registrar_nota_fiscal: {
         Args: { p_data: string; p_numero: string; p_projeto: number }
         Returns: number

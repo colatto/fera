@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useParams, useRouteLoaderData } from "react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { ArrowLeft, Copy, FolderOpen } from "lucide-react"
+import { ArrowLeft, FolderOpen, Pencil } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,6 +46,7 @@ import {
   cancelarProjeto,
   definirCompatibilizacaoFundacao,
   editarIdentificadoresProjeto,
+  editarPastaLocal,
   enviarProjeto,
   registrarNotaFiscal,
   registrarOrdemCompra,
@@ -78,18 +79,6 @@ const CARACTERE_DE_CONTROLE = /[\u0000-\u001F\u007F]/
 
 function pastaValida(caminho: string): boolean {
   return PADRAO_PASTA_LOCAL.test(caminho) && !CARACTERE_DE_CONTROLE.test(caminho)
-}
-
-// Cópia universal do caminho (spec consulta-projetos): disponível a qualquer
-// perfil quando a pasta existe, inclusive quando a abertura é recusada pelo
-// navegador (confirmação negada ou protocolo bloqueado).
-async function copiarCaminhoPasta(caminho: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(caminho)
-    toast.success("Caminho copiado para a área de transferência.")
-  } catch (erro) {
-    toast.error(mensagemDeErro(erro))
-  }
 }
 
 // Humaniza `detalhes` por tipo de evento; o default é omitir, nunca serializar JSON.
@@ -726,6 +715,91 @@ function DialogEditarIdentificadores({
   )
 }
 
+// Diálogo exclusivo da pasta local (spec fluxo-projetos): disponível a qualquer
+// status, exceto CANCELADO — em CADASTRADO a edição segue pelo cabeçalho. Vazio
+// MEANS limpar a pasta e não impede a confirmação.
+function DialogEditarPasta({
+  aberto,
+  aoFechar,
+  projetoId,
+  pastaLocal,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  projetoId: number
+  pastaLocal: string
+}) {
+  const [pasta, setPasta] = useState(pastaLocal)
+  const mutacao = useAcaoFluxo((vars: { pasta: string | null }) =>
+    editarPastaLocal(projetoId, vars.pasta),
+  )
+
+  // O pre-fill é refeito a cada abertura com o caminho vigente do detalhe; o valor
+  // fica fora das dependências para não descartar o que o ADM digita se a consulta
+  // do detalhe atualizar (padrão do DialogRecebimento).
+  useEffect(() => {
+    if (!aberto) return
+    setPasta(pastaLocal)
+  }, [aberto])
+
+  // Validação local antes da RPC (spec fluxo-projetos): preenchido precisa ser um
+  // caminho Windows válido; vazio é permitido e limpa a pasta.
+  const pastaTrimada = pasta.trim()
+  const pastaInvalida = pastaTrimada !== "" && !pastaValida(pastaTrimada)
+
+  async function submeter() {
+    try {
+      await mutacao.mutateAsync({ pasta: pastaTrimada === "" ? null : pastaTrimada })
+      toast.success("Pasta local atualizada.")
+      aoFechar()
+    } catch (erro) {
+      toast.error(mensagemDeErro(erro))
+    }
+  }
+
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar pasta local</DialogTitle>
+          <DialogDescription>
+            Altera ou inclui o caminho da pasta no computador. A alteração fica registrada
+            na linha do tempo.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="editar-pasta">Pasta local</Label>
+          <Input
+            id="editar-pasta"
+            value={pasta}
+            maxLength={500}
+            className="font-mono"
+            placeholder="P:\Projetos\F-2026-0001"
+            onChange={(e) => setPasta(e.target.value)}
+          />
+          {pastaInvalida ? (
+            <p className="text-xs text-destructive">
+              Informe um caminho Windows iniciado por letra de unidade (ex.: P:\Projetos)
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Deixar vazio remove a pasta cadastrada.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={aoFechar}>
+            Voltar
+          </Button>
+          <Button disabled={pastaInvalida || mutacao.isPending} onClick={() => void submeter()}>
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ProjetoDetalhe() {
   const parametros = useParams()
   const id = Number(parametros.id)
@@ -735,6 +809,7 @@ export function ProjetoDetalhe() {
   const [cancelando, setCancelando] = useState(false)
   const [revertendo, setRevertendo] = useState(false)
   const [editando, setEditando] = useState(false)
+  const [editandoPasta, setEditandoPasta] = useState(false)
   const [ocAberta, setOcAberta] = useState(false)
   const [notaAberta, setNotaAberta] = useState(false)
   const [recebimentoAberto, setRecebimentoAberto] = useState(false)
@@ -899,44 +974,46 @@ export function ProjetoDetalhe() {
             />
             <div className="col-span-2 md:col-span-3">
               <p className="text-xs text-muted-foreground">Pasta local</p>
-              {p.pasta_local ? (
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                {p.pasta_local ? (
                   <p
                     className="min-w-0 max-w-full truncate font-mono font-medium"
                     title={p.pasta_local}
                   >
                     {p.pasta_local}
                   </p>
-                  <div className="flex shrink-0 gap-2">
+                ) : (
+                  <p className="font-medium">—</p>
+                )}
+                <div className="flex shrink-0 gap-2">
+                  {ehAdm && !cancelado && status !== "CADASTRADO" ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => void copiarCaminhoPasta(p.pasta_local ?? "")}
+                      onClick={() => setEditandoPasta(true)}
                     >
-                      <Copy className="size-4" aria-hidden />
-                      Copiar
+                      <Pencil className="size-4" aria-hidden />
+                      Editar
                     </Button>
-                    {pastaValida(p.pasta_local) ? (
-                      <Button asChild variant="outline" size="sm">
-                        {/* location: com dois-pontos é a sintaxe documentada do crumb
-                            do search-ms — com "=" o Explorador abre "Resultados da
-                            Pesquisa" tratando o caminho como termo de busca. */}
-                        <a
-                          href={
-                            "search-ms:query=&crumb=location:" + encodeURIComponent(p.pasta_local)
-                          }
-                          title="Abre o Explorador de Arquivos na pasta neste computador"
-                        >
-                          <FolderOpen className="size-4" aria-hidden />
-                          Abrir pasta
-                        </a>
-                      </Button>
-                    ) : null}
-                  </div>
+                  ) : null}
+                  {p.pasta_local && pastaValida(p.pasta_local) ? (
+                    <Button asChild variant="outline" size="sm">
+                      {/* location: com dois-pontos é a sintaxe documentada do crumb
+                          do search-ms — com "=" o Explorador abre "Resultados da
+                          Pesquisa" tratando o caminho como termo de busca. */}
+                      <a
+                        href={
+                          "search-ms:query=&crumb=location:" + encodeURIComponent(p.pasta_local)
+                        }
+                        title="Abre o Explorador de Arquivos na pasta neste computador"
+                      >
+                        <FolderOpen className="size-4" aria-hidden />
+                        Abrir pasta
+                      </a>
+                    </Button>
+                  ) : null}
                 </div>
-              ) : (
-                <p className="font-medium">—</p>
-              )}
+              </div>
             </div>
             {ehAdm ? (
               <div className="col-span-2 flex items-center gap-3 md:col-span-3">
@@ -1039,6 +1116,12 @@ export function ProjetoDetalhe() {
             projetoId={id}
             identificadorCliente={adm.identificador_cliente ?? ""}
             identificadorOperadora={adm.identificador_operadora ?? ""}
+            pastaLocal={adm.pasta_local ?? ""}
+          />
+          <DialogEditarPasta
+            aberto={editandoPasta}
+            aoFechar={() => setEditandoPasta(false)}
+            projetoId={id}
             pastaLocal={adm.pasta_local ?? ""}
           />
           <DialogOrdemCompra aberto={ocAberta} aoFechar={() => setOcAberta(false)} projetoId={id} />

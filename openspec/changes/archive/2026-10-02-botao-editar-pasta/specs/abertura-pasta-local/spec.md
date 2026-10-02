@@ -1,8 +1,6 @@
-## Purpose
+# Spec Delta
 
-Permitir que o usuário abra, com um clique a partir do detalhe do projeto, a pasta local onde os arquivos técnicos do projeto vivem — por meio do protocolo nativo do Windows `search-ms:`, atendido pelo próprio sistema, sem que nada precise ser instalado na máquina.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Abertura da pasta com um clique
 Para um projeto com pasta local definida, a interface MUST oferecer a ação **Abrir pasta**, que aciona o protocolo nativo do Windows `search-ms` com o caminho codificado (`search-ms:query=&crumb=location:<caminho url-codificado>`, com o crumb de localização separado do caminho por dois-pontos — sintaxe documentada do protocolo). O Windows MUST posicionar o Explorador de Arquivos na pasta indicada, mostrando seu conteúdo, sem que nenhum componente precise ser instalado na máquina. O ambiente homologado é Windows 11 com Google Chrome. O primeiro acionamento em cada máquina MUST depender da confirmação do usuário no diálogo de protocolo externo do Chrome; após a permissão do site, os acionamentos seguintes MUST abrir diretamente. O link de abertura MUST ser emitido somente quando o projeto tem pasta local definida. A interface MUST NÃO depender da abertura para nada além da conveniência: confirmação negada, protocolo bloqueado por política do navegador ou qualquer falha do acionamento não pode causar erro de aplicação.

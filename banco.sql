@@ -236,6 +236,40 @@ begin
 end;
 $$;
 
+-- p_pasta_local: o valor enviado é o estado final — null ou vazio limpa a pasta,
+-- sem preservação do valor vigente; caminho preenchido é trimado e validado como
+-- caminho Windows (letra de unidade + ":\", sem caracteres de controle). Recusa
+-- somente o status CANCELADO — em qualquer outro status a pasta pode ser editada.
+-- No-op quando o caminho é idêntico ao vigente — um único evento
+-- ALTERACAO_CADASTRAL quando muda.
+create or replace function public.editar_pasta_local(p_id bigint, p_pasta_local varchar)
+returns void language plpgsql security definer set search_path = public, auth as $$
+declare
+  v public.projeto%rowtype;
+  v_pasta varchar;
+begin
+  if not public.usuario_adm() then raise exception 'Apenas ADM pode editar a pasta local do projeto' using errcode = '42501'; end if;
+  select * into v from public.projeto where id = p_id for update;
+  if not found then raise exception 'Projeto inexistente'; end if;
+  if v.status = 'CANCELADO' then raise exception 'Projeto cancelado não permite edição da pasta local'; end if;
+  v_pasta := nullif(btrim(coalesce(p_pasta_local, '')), '');
+  if v_pasta is not null then
+    if v_pasta !~ '^[A-Za-z]:\\' then
+      raise exception 'Pasta local deve ser um caminho Windows iniciado por letra de unidade (ex.: P:\Projetos)';
+    end if;
+    if v_pasta ~ '[[:cntrl:]]' then
+      raise exception 'Pasta local não pode conter caracteres de controle';
+    end if;
+    if length(v_pasta) > 500 then
+      raise exception 'Pasta local excede o limite de 500 caracteres';
+    end if;
+  end if;
+  if v_pasta is not distinct from v.pasta_local then return; end if;
+  update public.projeto set pasta_local = v_pasta where id = p_id;
+  insert into public.evento_projeto(projeto_id, realizado_por, tipo) values(p_id, auth.uid(), 'ALTERACAO_CADASTRAL');
+end;
+$$;
+
 alter table public.usuario enable row level security;
 alter table public.cliente enable row level security;
 alter table public.operadora enable row level security;
@@ -312,4 +346,4 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar,varchar),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar,varchar),public.editar_pasta_local(bigint,varchar),public.dashboard_operacional(date,date) to authenticated;

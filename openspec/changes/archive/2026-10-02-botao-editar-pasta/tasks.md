@@ -1,0 +1,20 @@
+# Tasks
+
+## 1. RPC no Supabase remoto (via MCP Supabase)
+
+- [x] 1.1 Confirmar que o MCP Supabase está conectado ao projeto remoto correto; se indisponível, interromper a operação remota e reportar o bloqueio (regra do projeto — nenhum caminho alternativo local). Verificação: listagem do projeto ativo no MCP antes de qualquer SQL.
+- [x] 1.2 No remoto, executar via MCP Supabase a criação da função `public.editar_pasta_local(p_id bigint, p_pasta_local varchar)`: `security definer`, `set search_path = public, auth`, exige `public.usuario_adm()`, recusa somente status `CANCELADO`, valida a pasta como a RPC atual (btrim; null/vazio limpa; `^[A-Za-z]:\\`; sem `[[:cntrl:]]`; até 500 caracteres), atualiza apenas `pasta_local`, retorna sem alterar nada quando o caminho é idêntico ao vigente e grava um único `evento_projeto` `ALTERACAO_CADASTRAL` quando muda. Verificação: consulta no remoto com `pg_get_functiondef` mostra a definição completa da função.
+- [x] 1.3 No remoto, incluir `public.editar_pasta_local(bigint,varchar)` no `grant execute` existente para `authenticated`. Verificação: `select has_function_privilege('authenticated', 'public.editar_pasta_local(bigint,varchar)', 'execute')` retorna `true`.
+- [x] 1.4 No remoto, validar o comportamento da RPC com chamadas diretas em um projeto de teste: ADM em status `PAGO` com caminho válido (grava e cria evento), mesmo caminho reenviado (no-op, sem evento novo), campo vazio (limpa e cria evento), status `CANCELADO` (erro), caminho inválido (erro). Verificação: resultado de cada chamada e `select` do `evento_projeto` do projeto de teste; limpar os resíduos do teste ao final.
+
+## 2. Referência declarativa e frontend
+
+- [x] 2.1 Atualizar `banco.sql`: acrescentar a definição de `editar_pasta_local` junto das demais funções e adicionar a função ao `grant execute` da linha de grants. Verificação: `grep -n "editar_pasta_local" banco.sql` encontra a definição e o grant, e `git diff banco.sql` não mostra nenhuma outra mudança.
+- [x] 2.2 Em `src/queries/fluxo.ts`, criar `editarPastaLocal(projetoId: number, pasta: string | null)` chamando `supabase.rpc("editar_pasta_local", ...)` no padrão das demais funções do arquivo. Verificação: `npm run build` passa.
+- [x] 2.3 Em `src/routes/projetos/projeto-detalhe.tsx`, criar `DialogEditarPasta` no padrão dos diálogos existentes (pre-fill por `useEffect` na abertura): campo único "Pasta local" pré-preenchido, validação local com `pastaValida` (mensagem atual de caminho inválido), vazio permitido e significando limpar, mutação via `editarPastaLocal`. Verificação: `npm run build` passa.
+- [x] 2.4 Na linha "Pasta local" do detalhe: remover o botão Copiar, a função `copiarCaminhoPasta` e o import de `Copy`; renderizar o botão "Editar" (abre `DialogEditarPasta`) para `ehAdm` somente quando `status` não é `CADASTRADO` nem `CANCELADO`, inclusive junto ao placeholder "—" quando não há pasta; manter "Abrir pasta" e as demais regras da linha como estão. Verificação: `npm run build` passa e `grep -n "copiarCaminhoPasta\|Copy" src/routes/projetos/projeto-detalhe.tsx` não encontra mais a função nem o ícone.
+
+## 3. Validação integrada (front + remoto)
+
+- [x] 3.1 Com o app em `npm run dev`, logado como ADM, executar a matriz da delta de `fluxo-projetos`: projeto em `PAGO` com pasta definida — botão "Editar" visível, alterar caminho (atualizado + evento na linha do tempo), reenviar idêntico (sem evento novo), limpar o campo (pasta removida + evento); projeto sem pasta em status fora de `CADASTRADO`/`CANCELADO` — "Editar" junto ao "—" permite incluir; projeto em `CADASTRADO` — sem botão na linha e pasta editável pelo "Editar" do cabeçalho; projeto `CANCELADO` — sem ação; caminho inválido — bloqueio local com a mensagem. Verificação: comportamento observado igual aos cenários da delta; resíduos do teste limpos no remoto.
+- [x] 3.2 Logado como OPER, conferir a delta de `consulta-projetos`/`abertura-pasta-local`: caminho visível com "Abrir pasta" funcionando, sem Copiar e sem edição em qualquer status; recusar o diálogo do Chrome não causa erro. Verificação: comportamento observado igual aos cenários das deltas.

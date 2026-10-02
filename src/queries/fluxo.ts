@@ -176,5 +176,19 @@ export async function editarIdentificadoresProjeto(
   if (error) throw error
 }
 
+// Pasta local em qualquer status, exceto CANCELADO (spec fluxo-projetos): o valor
+// enviado é o estado final — null (ou vazio) limpa a pasta, preenchido troca.
+// A RPC não recebe undefined, então null é convertido para '' que a limpa igualmente.
+export async function editarPastaLocal(
+  projetoId: number,
+  pasta: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc("editar_pasta_local", {
+    p_id: projetoId,
+    p_pasta_local: pasta?.trim() || "",
+  })
+  if (error) throw error
+}
+
 // Tipo auxiliar para o contrato completo das funções públicas (referência).
 export type FuncoesPublicas = Database["public"]["Functions"]
