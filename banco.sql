@@ -85,9 +85,9 @@ create unique index projeto_centro_custo_unico on public.projeto (centro_custo);
 create index evento_linha_tempo_idx on public.evento_projeto (projeto_id, realizado_em desc);
 create index recebimento_nota_idx on public.recebimento (nota_fiscal_id);
 
-create or replace function public.fn_atualizar_timestamp() returns trigger language plpgsql as $$ begin new.atualizado_em := now(); return new; end; $$;
-create or replace function public.fn_impedir_edicao_evento() returns trigger language plpgsql as $$ begin raise exception 'Eventos de projeto são imutáveis'; end; $$;
-create or replace function public.fn_proteger_projeto() returns trigger language plpgsql as $$
+create or replace function public.fn_atualizar_timestamp() returns trigger language plpgsql set search_path = '' as $$ begin new.atualizado_em := now(); return new; end; $$;
+create or replace function public.fn_impedir_edicao_evento() returns trigger language plpgsql set search_path = '' as $$ begin raise exception 'Eventos de projeto são imutáveis'; end; $$;
+create or replace function public.fn_proteger_projeto() returns trigger language plpgsql set search_path = '' as $$
 begin
   if new.numero <> old.numero or new.codigo_pasta <> old.codigo_pasta then raise exception 'Número e código da pasta não podem ser alterados'; end if;
   if old.status = 'CANCELADO' and new.status <> 'CANCELADO' then raise exception 'Projeto cancelado não pode retornar ao fluxo ativo'; end if;
@@ -331,8 +331,6 @@ create view public.v_projetos_operacional with (security_barrier = true) as
 create view public.v_eventos_operacionais with (security_barrier = true) as
   select e.id,e.projeto_id,e.realizado_por,e.tipo,e.status_anterior,e.status_novo,e.motivo_cancelamento,case when public.usuario_adm() then e.detalhes end as detalhes,e.realizado_em
   from public.evento_projeto e where public.usuario_ativo();
-create view public.v_dashboard_operacional with (security_barrier = true) as
-  select status, count(*)::bigint quantidade from public.projeto where status <> 'CANCELADO' and public.usuario_ativo() group by status;
 create view public.v_ordens_compra_administrativo with (security_barrier = true) as
   select id,numero,data_oc,registrado_por,registrado_em,atualizado_em from public.ordem_compra where public.usuario_adm();
 create view public.v_projetos_administrativo with (security_barrier = true) as
@@ -353,8 +351,9 @@ create view public.v_dashboard_financeiro with (security_barrier = true) as
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all functions in schema public from public, anon;
 grant usage on schema public to authenticated;
-grant select on public.usuario,public.cliente,public.operadora,public.tipo_projeto,public.autorizacao_faturamento,public.nota_fiscal,public.recebimento,public.v_usuarios_manutencao,public.v_projetos_operacional,public.v_eventos_operacionais,public.v_dashboard_operacional,public.v_ordens_compra_administrativo,public.v_projetos_administrativo,public.v_dashboard_financeiro to authenticated;
+grant select on public.usuario,public.cliente,public.operadora,public.tipo_projeto,public.autorizacao_faturamento,public.nota_fiscal,public.recebimento,public.v_usuarios_manutencao,public.v_projetos_operacional,public.v_eventos_operacionais,public.v_ordens_compra_administrativo,public.v_projetos_administrativo,public.v_dashboard_financeiro to authenticated;
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
 grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar,varchar),public.editar_pasta_local(bigint,varchar),public.dashboard_operacional(date,date) to authenticated;
+revoke execute on function public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar) from anon,public;
