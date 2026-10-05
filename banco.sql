@@ -302,12 +302,23 @@ begin
   if not public.usuario_ativo() then raise exception 'Usuário inativo ou não cadastrado' using errcode = '42501'; end if;
   if p_data_inicial is null or p_data_final is null or p_data_inicial > p_data_final then raise exception 'Período inválido'; end if;
   return query
+  with entradas as (
+    select 'CADASTRADO'::public.project_status as status
+    from public.evento_projeto
+    where tipo = 'CRIACAO' and realizado_em::date between p_data_inicial and p_data_final
+    union all
+    select status_novo
+    from public.evento_projeto
+    where tipo = 'ALTERACAO_STATUS' and realizado_em::date between p_data_inicial and p_data_final
+  )
   select
-    coalesce((select jsonb_object_agg(status, quantidade) from (
-      select status::text, count(*)::bigint quantidade from public.projeto where status <> 'CANCELADO' group by status
+    coalesce((select jsonb_object_agg(status::text, quantidade) from (
+      select status, count(*)::bigint quantidade
+      from entradas where status <> 'CANCELADO' group by status
     ) por_status), '{}'::jsonb),
     count(*) filter (where p.data_envio between p_data_inicial and p_data_final)::bigint,
-    count(*) filter (where p.data_envio is not null and p.ordem_compra_id is null and p.status <> 'CANCELADO')::bigint
+    count(*) filter (where p.data_envio between p_data_inicial and p_data_final
+                       and p.ordem_compra_id is null and p.status <> 'CANCELADO')::bigint
   from public.projeto p;
 end; $$;
 

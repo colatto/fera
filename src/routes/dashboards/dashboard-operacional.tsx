@@ -109,7 +109,7 @@ export function DashboardOperacional() {
       <div>
         <h1 className="text-xl font-semibold">Dashboard operacional</h1>
         <p className="text-sm text-muted-foreground">
-          Distribuição por status e envios no período selecionado.
+          Movimentação por status e envios no período selecionado.
         </p>
       </div>
 
@@ -152,7 +152,7 @@ export function DashboardOperacional() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>
-                <CardDescription>Projetos ativos por status</CardDescription>
+                <CardDescription>Mudanças de status no período</CardDescription>
                 <CardTitle className="text-3xl">{formatarNumero(totalStatus)}</CardTitle>
               </CardHeader>
             </Card>
@@ -178,7 +178,7 @@ export function DashboardOperacional() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Distribuição por status</CardTitle>
-                <CardDescription>Projetos ativos, excluindo cancelados.</CardDescription>
+                <CardDescription>Entradas por status no período, excluindo cancelamentos.</CardDescription>
               </CardHeader>
               <CardContent className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -212,8 +212,8 @@ export function DashboardOperacional() {
                 <CardTitle className="text-base">Proporção por status</CardTitle>
                 <CardDescription>
                   {totalStatus === 0
-                    ? "Nenhum projeto ativo no momento — valores zerados."
-                    : "Participação de cada status no total ativo."}
+                    ? "Nenhuma movimentação no período — valores zerados."
+                    : "Participação de cada status na movimentação do período."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-72">
