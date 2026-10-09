@@ -86,7 +86,12 @@ export function Shell() {
 
   return (
     <div className="flex min-h-svh flex-col md:flex-row">
-      <aside className="flex shrink-0 flex-col bg-sidebar text-sidebar-foreground md:w-64 md:border-r md:border-sidebar-border">
+      {/* Sidebar fixa no desktop (spec interface-web): o md:h-svh é o que habilita
+          o sticky — sem altura explícita o flex a esticaria até a altura da linha
+          inteira, sem curso para deslizar — e md:sticky md:top-0 a mantém visível
+          durante a rolagem do documento. Em telas estreitas segue empilhada,
+          rolando com a página. */}
+      <aside className="flex shrink-0 flex-col bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-svh md:w-64 md:border-r md:border-sidebar-border">
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-2 md:justify-center md:py-5">
           <NavLink to="/projetos" className="flex items-center gap-3" aria-label="Fera — início">
             <img
@@ -105,6 +110,8 @@ export function Shell() {
             <LogOut className="size-4" aria-hidden />
           </Button>
         </div>
+        {/* Com o aside em altura de viewport, o menu rola internamente quando
+            excede a tela; logo e bloco de usuário permanecem fixos. */}
         <nav className="flex flex-1 flex-col gap-0.5 overflow-x-auto px-3 pb-3 md:overflow-y-auto md:px-3">
           <GrupoNavegacao rotulo="Operação" entradas={NAVEGACAO_OPERACAO} />
           {ehAdm ? <GrupoNavegacao rotulo="Administração" entradas={NAVEGACAO_ADM} /> : null}
