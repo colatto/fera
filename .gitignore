@@ -25,3 +25,4 @@ npm-debug.log*
 
 # Sistema operacional
 .DS_Store
+.zcode/

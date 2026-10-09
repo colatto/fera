@@ -266,7 +266,7 @@ function linhaToCsvAdm(l: ProjetoAdministrativo): string[] {
   ]
 }
 
-const TAMANHO_PAGINA = 15
+const TAMANHO_PAGINA = 50
 
 export function ProjetosListar() {
   const { usuario } = useRouteLoaderData("shell") as SessaoAtual
