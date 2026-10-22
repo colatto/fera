@@ -752,6 +752,7 @@ export type Database = {
           operadora: string | null
           pasta_local: string | null
           previsao_recebimento: string | null
+          responsavel_interno: string | null
           saldo_receber: number | null
           status: Database["public"]["Enums"]["project_status"] | null
           tipo_projeto: string | null
@@ -793,6 +794,7 @@ export type Database = {
           numero: number | null
           operadora: string | null
           pasta_local: string | null
+          responsavel_interno: string | null
           status: Database["public"]["Enums"]["project_status"] | null
           tipo_projeto: string | null
           uf: string | null

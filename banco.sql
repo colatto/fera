@@ -325,8 +325,8 @@ end; $$;
 create view public.v_usuarios_manutencao with (security_barrier = true) as
   select id, perfil, nome, email, ativo, criado_em, atualizado_em from public.usuario where public.usuario_adm();
 create view public.v_projetos_operacional with (security_barrier = true) as
-  select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.pasta_local
-  from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
+  select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,u.nome responsavel_interno,t.nome tipo_projeto,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.pasta_local
+  from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id left join public.usuario u on u.id=p.responsavel_interno_id
   where public.usuario_ativo();
 create view public.v_eventos_operacionais with (security_barrier = true) as
   select e.id,e.projeto_id,e.realizado_por,e.tipo,e.status_anterior,e.status_novo,e.motivo_cancelamento,case when public.usuario_adm() then e.detalhes end as detalhes,e.realizado_em
@@ -334,11 +334,11 @@ create view public.v_eventos_operacionais with (security_barrier = true) as
 create view public.v_ordens_compra_administrativo with (security_barrier = true) as
   select id,numero,data_oc,registrado_por,registrado_em,atualizado_em from public.ordem_compra where public.usuario_adm();
 create view public.v_projetos_administrativo with (security_barrier = true) as
-  select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,t.nome tipo_projeto,
+  select p.id,p.numero,p.ano,p.codigo_pasta,p.status,p.data_envio,p.cidade,p.uf,c.nome cliente,p.identificador_cliente,o.nome operadora,p.identificador_operadora,u.nome responsavel_interno,t.nome tipo_projeto,
     oc.numero numero_oc,oc.data_oc,p.centro_custo,af.autorizado_por,af.autorizado_em,nf.id nota_fiscal_id,nf.numero numero_nota_fiscal,nf.data_emissao,nf.valor valor_nota,
     coalesce(r.valor_recebido,0::numeric) valor_recebido, nf.valor - coalesce(r.valor_recebido,0::numeric) saldo_receber,
     (nf.data_emissao + 30) previsao_recebimento,p.fundacao_compatibilizada,p.criado_em,p.atualizado_em,p.valor,p.pasta_local
-  from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id
+  from public.projeto p join public.cliente c on c.id=p.cliente_id join public.operadora o on o.id=p.operadora_id join public.tipo_projeto t on t.id=p.tipo_projeto_id left join public.usuario u on u.id=p.responsavel_interno_id
     left join public.ordem_compra oc on oc.id=p.ordem_compra_id left join public.autorizacao_faturamento af on af.projeto_id=p.id left join public.nota_fiscal nf on nf.projeto_id=p.id
     left join lateral (select sum(valor_recebido)::numeric as valor_recebido from public.recebimento where nota_fiscal_id=nf.id) r on true
   where public.usuario_adm();

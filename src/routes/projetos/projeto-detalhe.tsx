@@ -962,6 +962,7 @@ export function ProjetoDetalhe() {
             <Campo rotulo="Cliente" valor={p.cliente ?? "—"} />
             <Campo rotulo="Identificador do cliente" valor={p.identificador_cliente ?? "—"} />
             <Campo rotulo="Operadora" valor={p.operadora ?? "—"} />
+            <Campo rotulo="Responsável interno" valor={p.responsavel_interno ?? "—"} />
             <Campo rotulo="Identificador da operadora" valor={p.identificador_operadora ?? "—"} />
             <Campo rotulo="Tipo de projeto" valor={p.tipo_projeto ?? "—"} />
             <Campo rotulo="Cidade / UF" valor={`${p.cidade ?? "—"} / ${p.uf ?? "—"}`} />

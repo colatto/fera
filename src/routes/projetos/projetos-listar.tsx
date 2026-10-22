@@ -152,6 +152,7 @@ function colunasOperacionais(): ColumnDef<LinhaProjeto>[] {
     colunaTexto((l) => l.identificador_cliente, "ID. cliente"),
     colunaTexto((l) => l.identificador_operadora, "ID. operadora"),
     colunaTexto((l) => l.operadora, "Operadora"),
+    colunaTexto((l) => l.responsavel_interno, "Responsável"),
     colunaTexto((l) => l.tipo_projeto, "Tipo"),
     colunaTexto((l) => l.cidade, "Cidade"),
     colunaTexto((l) => l.uf, "UF"),
@@ -181,6 +182,7 @@ function colunasAdministrativas(): ColumnDef<LinhaProjeto>[] {
     colunaTexto((l) => l.identificador_cliente, "ID. cliente"),
     colunaTexto((l) => l.identificador_operadora, "ID. operadora"),
     colunaTexto((l) => l.operadora, "Operadora"),
+    colunaTexto((l) => l.responsavel_interno, "Responsável"),
     colunaTexto((l) => l.tipo_projeto, "Tipo"),
     colunaTexto((l) => l.cidade, "Cidade"),
     colunaTexto((l) => l.uf, "UF"),
@@ -225,13 +227,13 @@ function exportarConsulta(
     perfil === "ADM"
       ? [
           "Código", "Status", "Cliente", "ID cliente", "ID operadora",
-          "Operadora", "Tipo", "Cidade", "UF", "Data de envio",
+          "Operadora", "Responsável", "Tipo", "Cidade", "UF", "Data de envio",
           "Valor do projeto", "OC", "Data OC", "Centro de custo", "Nota fiscal", "Data de emissão",
           "Valor da nota", "Valor recebido", "Saldo a receber", "Previsão de recebimento",
         ]
       : [
           "Código", "Status", "Cliente", "ID cliente", "ID operadora",
-          "Operadora","Tipo", "Cidade", "UF", "Data de envio",
+          "Operadora", "Responsável","Tipo", "Cidade", "UF", "Data de envio",
         ]
   const conteudo = linhas.map((linha) =>
     perfil === "ADM"
@@ -249,6 +251,7 @@ function linhaToCsvOper(l: ProjetoOperacional): string[] {
   return [
     l.codigo_pasta ?? "", ROTULOS_STATUS[l.status ?? "CADASTRADO"], l.cliente ?? "",
     l.identificador_cliente ?? "", l.identificador_operadora ?? "", l.operadora ?? "",
+    l.responsavel_interno ?? "",
     l.tipo_projeto ?? "", l.cidade ?? "", l.uf ?? "", formatarData(l.data_envio),
   ]
 }
