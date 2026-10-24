@@ -16,7 +16,19 @@ A listagem de projetos MUST usar a projeção do perfil: ADM consulta `v_projeto
 - **THEN** retornam os projetos com dados operacionais e nenhuma coluna financeira ou de documentos é exibida
 
 ### Requirement: Filtros combináveis
-A listagem MUST oferecer filtros combináveis por cliente, operadora, identificador de cliente ou de operadora, cidade, UF, tipo, status e compatibilização da fundação, aplicados em conjunto; limpar os filtros MUST restaurar a consulta sem filtros. O filtro de identificador, rotulado "ID cliente/oper.", MUST ser um campo único que casa o termo informado com o identificador do cliente ou o da operadora, por substring e sem diferenciar maiúsculas. O filtro de compatibilização, rotulado "Compatibilizados", MUST oferecer as opções Todos, Sim e Não e estar disponível para ADM e OPER.
+A listagem MUST oferecer filtros combináveis por código da pasta, cliente, operadora, identificador de cliente ou de operadora, cidade, UF, tipo, status e compatibilização da fundação, aplicados em conjunto; limpar os filtros MUST restaurar a consulta sem filtros. O filtro de código, rotulado "Código", MUST ser o primeiro filtro do painel, casar o termo informado com o código da pasta do projeto por substring e sem diferenciar maiúsculas, e estar disponível para ADM e OPER. O filtro de identificador, rotulado "ID cliente/oper.", MUST ser um campo único que casa o termo informado com o identificador do cliente ou o da operadora, por substring e sem diferenciar maiúsculas. O filtro de compatibilização, rotulado "Compatibilizados", MUST oferecer as opções Todos, Sim e Não e estar disponível para ADM e OPER.
+
+#### Scenario: Código como primeiro filtro
+- **WHEN** a listagem de projetos renderiza o painel de filtros
+- **THEN** o campo "Código" aparece como primeiro filtro, antes de "Status", nos perfis ADM e OPER
+
+#### Scenario: Busca pelo código da pasta
+- **WHEN** o usuário informa no campo "Código" um termo contido no código da pasta de projetos
+- **THEN** a listagem retorna esses projetos, nos perfis ADM e OPER
+
+#### Scenario: Código combinado com outros filtros
+- **WHEN** o usuário informa um termo no campo "Código" e seleciona também cliente e status
+- **THEN** a listagem retorna somente os projetos cujo código da pasta contém o termo e que atendem aos demais filtros
 
 #### Scenario: Combinação de filtros
 - **WHEN** o usuário aplica cliente, UF e status simultaneamente

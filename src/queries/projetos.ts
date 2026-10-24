@@ -14,6 +14,7 @@ const vOperacional = "v_projetos_operacional" as const
 
 // Filtros combináveis (spec consulta-projetos): aplicados em conjunto no servidor.
 export interface FiltrosProjetos {
+  codigo: string
   cliente: string
   identificador: string
   operadora: string
@@ -25,6 +26,7 @@ export interface FiltrosProjetos {
 }
 
 export const filtrosVazios: FiltrosProjetos = {
+  codigo: "",
   cliente: "",
   identificador: "",
   operadora: "",
@@ -46,6 +48,7 @@ function montarConsulta(perfil: Perfil, filtros: FiltrosProjetos) {
     .order("criado_em", { ascending: false })
 
   let q = consulta
+  if (filtros.codigo) q = q.ilike("codigo_pasta", `%${filtros.codigo.trim()}%`)
   if (filtros.cliente) q = q.eq("cliente", filtros.cliente)
   if (filtros.identificador) {
     // Vírgula separa condições no `.or()` do PostgREST; identificadores são

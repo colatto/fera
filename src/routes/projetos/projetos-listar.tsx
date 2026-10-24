@@ -371,7 +371,12 @@ export function ProjetosListar() {
 
       <Card>
         <CardContent className="relative">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-9">
+            <FiltroTexto
+              rotulo="Código"
+              valor={filtros.codigo}
+              aoMudar={(v) => mudarFiltro("codigo", v)}
+            />
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Status</Label>
               <Select
