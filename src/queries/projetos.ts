@@ -15,9 +15,8 @@ const vOperacional = "v_projetos_operacional" as const
 // Filtros combináveis (spec consulta-projetos): aplicados em conjunto no servidor.
 export interface FiltrosProjetos {
   cliente: string
-  identificadorCliente: string
+  identificador: string
   operadora: string
-  identificadorOperadora: string
   cidade: string
   uf: string
   tipo: string
@@ -27,9 +26,8 @@ export interface FiltrosProjetos {
 
 export const filtrosVazios: FiltrosProjetos = {
   cliente: "",
-  identificadorCliente: "",
+  identificador: "",
   operadora: "",
-  identificadorOperadora: "",
   cidade: "",
   uf: "",
   tipo: "",
@@ -49,11 +47,15 @@ function montarConsulta(perfil: Perfil, filtros: FiltrosProjetos) {
 
   let q = consulta
   if (filtros.cliente) q = q.eq("cliente", filtros.cliente)
-  if (filtros.identificadorCliente)
-    q = q.ilike("identificador_cliente", `%${filtros.identificadorCliente.trim()}%`)
+  if (filtros.identificador) {
+    // Vírgula separa condições no `.or()` do PostgREST; identificadores são
+    // alfanuméricos, então o termo é aparado e fica sem vírgulas.
+    const termo = filtros.identificador.trim().replaceAll(",", "")
+    q = q.or(
+      `identificador_cliente.ilike.%${termo}%,identificador_operadora.ilike.%${termo}%`,
+    )
+  }
   if (filtros.operadora) q = q.eq("operadora", filtros.operadora)
-  if (filtros.identificadorOperadora)
-    q = q.ilike("identificador_operadora", `%${filtros.identificadorOperadora.trim()}%`)
   if (filtros.cidade) q = q.ilike("cidade", `%${filtros.cidade.trim()}%`)
   if (filtros.uf) q = q.eq("uf", filtros.uf.trim().toUpperCase())
   if (filtros.tipo) q = q.eq("tipo_projeto", filtros.tipo)

@@ -371,7 +371,7 @@ export function ProjetosListar() {
 
       <Card>
         <CardContent className="relative">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-9">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-8">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Status</Label>
               <Select
@@ -398,14 +398,9 @@ export function ProjetosListar() {
               opcoes={(clientes.data ?? []).map((c) => c.nome)}
             />
             <FiltroTexto
-              rotulo="ID. cliente"
-              valor={filtros.identificadorCliente}
-              aoMudar={(v) => mudarFiltro("identificadorCliente", v)}
-            />
-            <FiltroTexto
-              rotulo="ID. operadora"
-              valor={filtros.identificadorOperadora}
-              aoMudar={(v) => mudarFiltro("identificadorOperadora", v)}
+              rotulo="ID cliente/oper."
+              valor={filtros.identificador}
+              aoMudar={(v) => mudarFiltro("identificador", v)}
             />
             <FiltroSelect
               rotulo="Operadora"
