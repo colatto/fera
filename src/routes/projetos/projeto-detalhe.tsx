@@ -51,6 +51,7 @@ import {
   registrarNotaFiscal,
   registrarOrdemCompra,
   registrarRecebimento,
+  retrocederOc,
   retornarEnvio,
   vincularOrdemCompra,
   useAcaoFluxo,
@@ -291,6 +292,51 @@ function DialogReverterEnvio({
           </Button>
           <Button variant="destructive" disabled={mutacao.isPending} onClick={() => void submeter()}>
             Cancelar envio
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DialogReverterOc({
+  aberto,
+  aoFechar,
+  projetoId,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  projetoId: number
+}) {
+  const mutacao = useAcaoFluxo(() => retrocederOc(projetoId))
+
+  async function submeter() {
+    try {
+      await mutacao.mutateAsync(undefined)
+      toast.success("Vínculo de OC cancelado.")
+      aoFechar()
+    } catch (erro) {
+      // Sem mapeamento local: as recusas da reversão de OC já chegam com a
+      // mensagem específica do banco (design D3).
+      toast.error(mensagemDeErro(erro))
+    }
+  }
+
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancelar vínculo de OC</DialogTitle>
+          <DialogDescription>
+            A ordem de compra é desvinculada e o centro de custo fica livre para outros projetos. O projeto volta ao status Enviado e a data de envio é preservada. A OC permanece registrada e pode ser vinculada novamente.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={aoFechar}>
+            Voltar
+          </Button>
+          <Button variant="destructive" disabled={mutacao.isPending} onClick={() => void submeter()}>
+            Cancelar vínculo de OC
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -808,6 +854,7 @@ export function ProjetoDetalhe() {
 
   const [cancelando, setCancelando] = useState(false)
   const [revertendo, setRevertendo] = useState(false)
+  const [revertendoOc, setRevertendoOc] = useState(false)
   const [editando, setEditando] = useState(false)
   const [editandoPasta, setEditandoPasta] = useState(false)
   const [ocAberta, setOcAberta] = useState(false)
@@ -926,14 +973,19 @@ export function ProjetoDetalhe() {
               </Button>
             ) : null}
             {ehAdm && status === "OC_REGISTRADA" ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={mutacaoAutorizar.isPending}
-                onClick={() => void autorizar()}
-              >
-                Autorizar faturamento
-              </Button>
+              <>
+                <Button size="sm" variant="destructive" onClick={() => setRevertendoOc(true)}>
+                  Cancelar vínculo de OC
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={mutacaoAutorizar.isPending}
+                  onClick={() => void autorizar()}
+                >
+                  Autorizar faturamento
+                </Button>
+              </>
             ) : null}
             {ehAdm && status === "AUTORIZADO_FATURAMENTO" ? (
               <Button size="sm" variant="secondary" onClick={() => setNotaAberta(true)}>
@@ -1107,6 +1159,11 @@ export function ProjetoDetalhe() {
       <DialogReverterEnvio
         aberto={revertendo}
         aoFechar={() => setRevertendo(false)}
+        projetoId={id}
+      />
+      <DialogReverterOc
+        aberto={revertendoOc}
+        aoFechar={() => setRevertendoOc(false)}
         projetoId={id}
       />
       {ehAdm ? (

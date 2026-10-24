@@ -80,6 +80,18 @@ export async function retornarEnvio(id: number): Promise<void> {
   if (error) throw error
 }
 
+// Reversão do vínculo de OC (OC_REGISTRADA → ENVIADO), exclusiva de ADM:
+// o banco desvincula a OC, limpa o centro de custo e preserva data_envio
+// na mesma transição, sem motivo; a recusa a partir de qualquer outra
+// origem vem com a mensagem específica do banco (spec fluxo-projetos).
+export async function retrocederOc(id: number): Promise<void> {
+  const { error } = await supabase.rpc("alterar_status_projeto", {
+    p_id: id,
+    p_novo: "ENVIADO" satisfies StatusProjeto,
+  })
+  if (error) throw error
+}
+
 export async function registrarOrdemCompra(
   p_numero: string,
   p_data: string,

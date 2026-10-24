@@ -149,6 +149,10 @@ begin
   if not found or v.status = 'CANCELADO' then raise exception 'Projeto inexistente ou cancelado'; end if;
   if p_novo = 'ENVIADO' and v.status = 'CADASTRADO' then update public.projeto set status=p_novo, data_envio=coalesce(p_data_envio,current_date) where id=p_id;
   elsif p_novo = 'CADASTRADO' and v.status = 'ENVIADO' then update public.projeto set status=p_novo, data_envio=null where id=p_id;
+  elsif p_novo = 'ENVIADO' and v.status = 'OC_REGISTRADA' then
+    if not public.usuario_adm() then raise exception 'Apenas ADM pode reverter vínculo de OC' using errcode = '42501'; end if;
+    update public.projeto set status = p_novo, ordem_compra_id = null, centro_custo = null where id = p_id;
+  elsif p_novo = 'ENVIADO' and v.status <> 'CADASTRADO' then raise exception 'Reversão de OC exige projeto em status OC_REGISTRADA';
   elsif p_novo = 'CANCELADO' and v.status = 'CADASTRADO' and nullif(btrim(p_motivo),'') is not null then update public.projeto set status=p_novo where id=p_id;
   elsif p_novo = 'CANCELADO' and v.status <> 'CADASTRADO' then raise exception 'Cancelamento exige projeto em status CADASTRADO';
   else raise exception 'Transição manual não autorizada'; end if;
