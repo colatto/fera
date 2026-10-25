@@ -18,7 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { dataLocalHoje, formatarMoeda, formatarValorDecimal, mensagemDeErro } from "@/lib/formato"
+import {
+  dataLocalHoje,
+  formatarMoeda,
+  formatarValorDecimal,
+  mensagemDeErro,
+} from "@/lib/formato"
 import {
   confirmarRecebimentosLote,
   useAcaoFluxo,
@@ -42,19 +47,58 @@ export function DialogLote({
   notasDisponiveis: ProjetoAdministrativo[]
 }) {
   const [linhas, setLinhas] = useState<LinhaLote[]>([])
+  const [dataEmissao, setDataEmissao] = useState("")
+  const [selecionandoData, setSelecionandoData] = useState(false)
 
   const mutacao = useAcaoFluxo((itens: ItemRecebimentoLote[]) =>
     confirmarRecebimentosLote(itens),
   )
 
-  // O diálogo fica montado na listagem (design D2): as linhas nunca persistem
-  // entre aberturas — a regra de nota única pressupõe estado limpo a cada abertura.
+  // O diálogo fica montado na listagem (design D2): linhas e data escolhida nunca
+  // persistem entre aberturas — a regra de nota única pressupõe estado limpo a
+  // cada abertura.
   useEffect(() => {
-    if (aberto) setLinhas([])
+    if (aberto) {
+      setLinhas([])
+      setDataEmissao("")
+      setSelecionandoData(false)
+    }
   }, [aberto])
 
+  // O lote é unidatário por emissão: as opções de nota restringem-se à data de
+  // emissão escolhida; linhas só existem com uma data escolhida.
+  const notasDaData =
+    dataEmissao === ""
+      ? []
+      : notasDisponiveis.filter((p) => p.data_emissao === dataEmissao)
+
+  // O calendário permite escolher qualquer data, mas linha só nasce onde há
+  // notas com saldo em aberto.
+  const dataSemPendentes = dataEmissao !== "" && notasDaData.length === 0
+
   function adicionarLinha() {
+    // Sem data de emissão escolhida, nenhuma linha é criada: o calendário é
+    // apresentado primeiro.
+    if (dataEmissao === "") {
+      setSelecionandoData(true)
+      return
+    }
+    // Data sem notas pendentes não gera linha (aviso inline junto ao campo).
+    if (notasDaData.length === 0) return
     setLinhas((atual) => [...atual, { notaFiscalId: "", data: dataLocalHoje(), valor: "" }])
+  }
+
+  function escolherData(data: string) {
+    setDataEmissao(data)
+    // "Limpar" no calendário mantém o campo visível para nova escolha.
+    setSelecionandoData(data === "")
+  }
+
+  function removerLinha(indice: number) {
+    const restantes = linhas.filter((_, i) => i !== indice)
+    setLinhas(restantes)
+    // A última linha removida libera nova escolha de data.
+    if (restantes.length === 0) setDataEmissao("")
   }
 
   function mudarLinha(indice: number, campos: Partial<LinhaLote>) {
@@ -120,6 +164,23 @@ export function DialogLote({
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
+          {selecionandoData || dataEmissao !== "" ? (
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs">Data de emissão</Label>
+              <Input
+                type="date"
+                value={dataEmissao}
+                disabled={linhas.length > 0}
+                onChange={(e) => escolherData(e.target.value)}
+                className="w-full sm:max-w-xs"
+              />
+              {dataSemPendentes ? (
+                <p className="text-xs text-destructive">
+                  Nenhuma nota pendente nesta data de emissão
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {linhas.map((linha, indice) => {
             // Nota já escolhida em OUTRA linha: visível, porém desabilitada (design D5).
             // Excluir a própria linha do conjunto permite a troca devolver a nota ao select.
@@ -142,7 +203,7 @@ export function DialogLote({
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {notasDisponiveis.map((p) => {
+                      {notasDaData.map((p) => {
                         const idNota = String(p.nota_fiscal_id)
                         const jaEmUso = emUso.has(idNota)
                         return (
@@ -177,7 +238,7 @@ export function DialogLote({
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Remover item"
-                  onClick={() => setLinhas((atual) => atual.filter((_, i) => i !== indice))}
+                  onClick={() => removerLinha(indice)}
                 >
                   ✕
                 </Button>
