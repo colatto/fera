@@ -4,7 +4,7 @@
 
 create type public.app_role as enum ('ADM', 'OPER');
 create type public.project_status as enum ('CADASTRADO', 'ENVIADO', 'OC_REGISTRADA', 'AUTORIZADO_FATURAMENTO', 'NOTA_EMITIDA', 'PAGO', 'CANCELADO');
-create type public.project_event_type as enum ('CRIACAO', 'ALTERACAO_CADASTRAL', 'ALTERACAO_STATUS', 'COMPATIBILIZACAO_FUNDACAO');
+create type public.project_event_type as enum ('CRIACAO', 'ALTERACAO_CADASTRAL', 'ALTERACAO_STATUS', 'COMPATIBILIZACAO_FUNDACAO', 'ALTERACAO_VALOR');
 
 create table public.usuario (
   id uuid primary key references auth.users(id) on delete restrict,
@@ -200,24 +200,30 @@ begin if not public.usuario_adm() then raise exception 'Apenas ADM' using errcod
 -- p_pasta_local: ausente (null) preserva a pasta vigente — mantém compatíveis as
 -- chamadas antigas de 3 parâmetros durante a janela de deploy; vazio ou só de
 -- espaços limpa a pasta; caminho preenchido é trimado e validado como caminho
--- Windows (letra de unidade + ":\", sem caracteres de controle). No-op somente
--- quando identificadores E pasta estão idênticos aos vigentes — um único evento
--- ALTERACAO_CADASTRAL quando algo muda.
-create or replace function public.editar_identificadores_projeto(p_id bigint, p_identificador_cliente varchar, p_identificador_operadora varchar, p_pasta_local varchar default null)
+-- Windows (letra de unidade + ":\", sem caracteres de controle). p_valor: ausente
+-- preserva o valor vigente (mesmo padrão de compatibilidade); informado deve ser
+-- positivo. Eventos por natureza: um único ALTERACAO_CADASTRAL quando
+-- identificadores ou pasta mudam, um ALTERACAO_VALOR quando o valor muda; no-op
+-- somente quando identificadores, pasta e valor estão todos idênticos aos vigentes.
+create or replace function public.editar_identificadores_projeto(p_id bigint, p_identificador_cliente varchar, p_identificador_operadora varchar, p_pasta_local varchar default null, p_valor numeric default null)
 returns void language plpgsql security definer set search_path = public, auth as $$
 declare
   v public.projeto%rowtype;
   v_cliente varchar;
   v_operadora varchar;
   v_pasta varchar;
+  v_valor numeric;
+  v_mudou_cadastral boolean;
+  v_mudou_valor boolean;
 begin
   if not public.usuario_adm() then raise exception 'Apenas ADM pode editar identificadores do projeto' using errcode = '42501'; end if;
   select * into v from public.projeto where id = p_id for update;
   if not found then raise exception 'Projeto inexistente'; end if;
-  if v.status <> 'CADASTRADO' then raise exception 'A edição de identificadores exige projeto em status CADASTRADO'; end if;
+  if v.status <> 'CADASTRADO' then raise exception 'A edição exige projeto em status CADASTRADO'; end if;
   v_cliente := btrim(coalesce(p_identificador_cliente, ''));
   v_operadora := btrim(coalesce(p_identificador_operadora, ''));
   if v_cliente = '' or v_operadora = '' then raise exception 'Identificadores do cliente e da operadora são obrigatórios'; end if;
+  if p_valor is not null and p_valor <= 0 then raise exception 'Valor do projeto deve ser positivo'; end if;
   if p_pasta_local is null then
     v_pasta := v.pasta_local;
   else
@@ -234,9 +240,17 @@ begin
       end if;
     end if;
   end if;
-  if v_cliente = v.identificador_cliente and v_operadora = v.identificador_operadora and v_pasta is not distinct from v.pasta_local then return; end if;
-  update public.projeto set identificador_cliente = v_cliente, identificador_operadora = v_operadora, pasta_local = v_pasta where id = p_id;
-  insert into public.evento_projeto(projeto_id, realizado_por, tipo) values(p_id, auth.uid(), 'ALTERACAO_CADASTRAL');
+  v_valor := coalesce(p_valor, v.valor);
+  v_mudou_cadastral := v_cliente <> v.identificador_cliente or v_operadora <> v.identificador_operadora or v_pasta is distinct from v.pasta_local;
+  v_mudou_valor := v_valor is distinct from v.valor;
+  if not v_mudou_cadastral and not v_mudou_valor then return; end if;
+  update public.projeto set identificador_cliente = v_cliente, identificador_operadora = v_operadora, pasta_local = v_pasta, valor = v_valor where id = p_id;
+  if v_mudou_cadastral then
+    insert into public.evento_projeto(projeto_id, realizado_por, tipo) values(p_id, auth.uid(), 'ALTERACAO_CADASTRAL');
+  end if;
+  if v_mudou_valor then
+    insert into public.evento_projeto(projeto_id, realizado_por, tipo) values(p_id, auth.uid(), 'ALTERACAO_VALOR');
+  end if;
 end;
 $$;
 
@@ -359,5 +373,5 @@ grant select on public.usuario,public.cliente,public.operadora,public.tipo_proje
 grant insert,update on public.cliente,public.operadora,public.tipo_projeto to authenticated;
 grant usage,select on all sequences in schema public to authenticated;
 grant execute on function public.usuario_ativo(),public.usuario_adm() to authenticated;
-grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar,varchar),public.editar_pasta_local(bigint,varchar),public.dashboard_operacional(date,date) to authenticated;
+grant execute on function public.alterar_status_projeto(bigint,public.project_status,date,text),public.criar_projeto(bigint,bigint,varchar,bigint,varchar,varchar,char,numeric,uuid),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar),public.autorizar_faturamento(bigint),public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_recebimento(bigint,date,numeric),public.confirmar_recebimentos_lote(jsonb),public.definir_compatibilizacao_fundacao(bigint,boolean),public.editar_identificadores_projeto(bigint,varchar,varchar,varchar,numeric),public.editar_pasta_local(bigint,varchar),public.dashboard_operacional(date,date) to authenticated;
 revoke execute on function public.registrar_nota_fiscal(bigint,varchar,date),public.registrar_ordem_compra(varchar,date),public.vincular_ordem_compra(bigint,bigint,varchar) from anon,public;

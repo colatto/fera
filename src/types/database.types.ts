@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -277,7 +277,7 @@ export type Database = {
           data_oc: string
           id?: never
           numero: string
-          registrado_em?: string
+          registrado_em: string
           registrado_por: string
         }
         Update: {
@@ -606,13 +606,6 @@ export type Database = {
         }
         Relationships: []
       }
-      v_dashboard_operacional: {
-        Row: {
-          quantidade: number | null
-          status: Database["public"]["Enums"]["project_status"] | null
-        }
-        Relationships: []
-      }
       v_eventos_operacionais: {
         Row: {
           detalhes: Json | null
@@ -879,6 +872,7 @@ export type Database = {
           p_identificador_cliente: string
           p_identificador_operadora: string
           p_pasta_local?: string
+          p_valor?: number
         }
         Returns: undefined
       }
@@ -912,6 +906,7 @@ export type Database = {
         | "ALTERACAO_CADASTRAL"
         | "ALTERACAO_STATUS"
         | "COMPATIBILIZACAO_FUNDACAO"
+        | "ALTERACAO_VALOR"
       project_status:
         | "CADASTRADO"
         | "ENVIADO"
@@ -1053,6 +1048,7 @@ export const Constants = {
         "ALTERACAO_CADASTRAL",
         "ALTERACAO_STATUS",
         "COMPATIBILIZACAO_FUNDACAO",
+        "ALTERACAO_VALOR",
       ],
       project_status: [
         "CADASTRADO",

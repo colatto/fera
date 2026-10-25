@@ -30,6 +30,7 @@ export const ROTULOS_EVENTO: Record<TipoEvento, string> = {
   ALTERACAO_CADASTRAL: "Alteração cadastral",
   ALTERACAO_STATUS: "Alteração de status",
   COMPATIBILIZACAO_FUNDACAO: "Compatibilização de fundação",
+  ALTERACAO_VALOR: "Alteração do valor",
 }
 
 export const ROTULOS_PERFIL: Record<Perfil, string> = {

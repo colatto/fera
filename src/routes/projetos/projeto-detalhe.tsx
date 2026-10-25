@@ -648,6 +648,7 @@ function DialogEditarIdentificadores({
   identificadorCliente,
   identificadorOperadora,
   pastaLocal,
+  valor,
 }: {
   aberto: boolean
   aoFechar: () => void
@@ -655,13 +656,21 @@ function DialogEditarIdentificadores({
   identificadorCliente: string
   identificadorOperadora: string
   pastaLocal: string
+  valor: number | null
 }) {
   const [cliente, setCliente] = useState(identificadorCliente)
   const [operadora, setOperadora] = useState(identificadorOperadora)
   const [pasta, setPasta] = useState(pastaLocal)
+  const [valorTexto, setValorTexto] = useState("")
   const mutacao = useAcaoFluxo(
-    (vars: { cliente: string; operadora: string; pasta: string }) =>
-      editarIdentificadoresProjeto(projetoId, vars.cliente, vars.operadora, vars.pasta),
+    (vars: { cliente: string; operadora: string; pasta: string; valor: number }) =>
+      editarIdentificadoresProjeto(
+        projetoId,
+        vars.cliente,
+        vars.operadora,
+        vars.pasta,
+        vars.valor,
+      ),
   )
 
   // O diálogo permanece montado enquanto o projeto está em CADASTRADO: o pre-fill é
@@ -673,15 +682,19 @@ function DialogEditarIdentificadores({
     setCliente(identificadorCliente)
     setOperadora(identificadorOperadora)
     setPasta(pastaLocal)
+    setValorTexto(formatarValorDecimal(valor))
   }, [aberto])
 
   // Validação local antes da RPC (spec fluxo-projetos): trim e não vazio nos dois
-  // campos; pasta preenchida precisa ser um caminho Windows válido. Vazio MEANS
-  // limpar a pasta — a ausência não impede a confirmação.
+  // campos; pasta preenchida precisa ser um caminho Windows válido; valor precisa
+  // ser monetário e positivo (mesmo parsing da criação). Vazio na pasta MEANS
+  // limpá-la — a ausência não impede a confirmação.
   const pastaTrimada = pasta.trim()
   const pastaInvalida = pastaTrimada !== "" && !pastaValida(pastaTrimada)
+  const valorNumerico = Number(valorTexto.replace(",", "."))
+  const valorPositivo = Number.isFinite(valorNumerico) && valorNumerico > 0
   const valido =
-    cliente.trim() !== "" && operadora.trim() !== "" && !pastaInvalida
+    cliente.trim() !== "" && operadora.trim() !== "" && !pastaInvalida && valorPositivo
 
   async function submeter() {
     try {
@@ -689,8 +702,9 @@ function DialogEditarIdentificadores({
         cliente: cliente.trim(),
         operadora: operadora.trim(),
         pasta: pastaTrimada,
+        valor: valorNumerico,
       })
-      toast.success("Identificadores atualizados.")
+      toast.success("Projeto atualizado.")
       aoFechar()
     } catch (erro) {
       toast.error(mensagemDeErro(erro))
@@ -701,11 +715,11 @@ function DialogEditarIdentificadores({
     <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Editar identificadores</DialogTitle>
+          <DialogTitle>Editar projeto</DialogTitle>
           <DialogDescription>
-            Corrige apenas os textos dos identificadores e a pasta local — cliente e
-            operadora vinculadas permanecem as mesmas. A alteração fica registrada na
-            linha do tempo.
+            Corrige apenas os textos dos identificadores, a pasta local e o valor — cliente e
+            operadora vinculadas permanecem as mesmas. A alteração fica registrada na linha do
+            tempo.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -745,6 +759,19 @@ function DialogEditarIdentificadores({
               <p className="text-xs text-muted-foreground">
                 Deixar vazio remove a pasta cadastrada.
               </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="editar-valor">Valor (R$)</Label>
+            <Input
+              id="editar-valor"
+              inputMode="decimal"
+              value={valorTexto}
+              placeholder="0,00"
+              onChange={(e) => setValorTexto(e.target.value)}
+            />
+            {valorPositivo ? null : (
+              <p className="text-xs text-destructive">Informe um valor monetário positivo.</p>
             )}
           </div>
         </div>
@@ -1175,6 +1202,7 @@ export function ProjetoDetalhe() {
             identificadorCliente={adm.identificador_cliente ?? ""}
             identificadorOperadora={adm.identificador_operadora ?? ""}
             pastaLocal={adm.pasta_local ?? ""}
+            valor={adm.valor ?? null}
           />
           <DialogEditarPasta
             aberto={editandoPasta}
