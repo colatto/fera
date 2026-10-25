@@ -7,7 +7,6 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type SortingState,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, FunnelX } from "lucide-react"
 import { toast } from "sonner"
@@ -47,6 +46,7 @@ import {
   type ProjetoOperacional,
 } from "@/queries/projetos"
 import { chavesCadastros, listarClientes, listarOperadoras, listarTipos } from "@/queries/cadastros"
+import { useConsultaProjetos } from "@/routes/projetos/contexto-consulta"
 
 function useDebounce<T>(valor: T, milissegundos: number): T {
   const [atrasado, setAtrasado] = useState(valor)
@@ -276,9 +276,12 @@ export function ProjetosListar() {
   const ehAdm = usuario.perfil === "ADM"
   const navegar = useNavigate()
 
-  const [filtros, setFiltros] = useState<FiltrosProjetos>(filtrosVazios)
+  // Filtros, ordenação e página vivem no contexto acima das rotas (spec
+  // consulta-projetos, "Estado da consulta preservado na navegação") — só o
+  // diálogo do lote é estado local. O debounce monta já hidratado, então a
+  // restauração dispara a consulta imediatamente, sem espera de 300ms.
+  const { filtros, setFiltros, ordenacao, setOrdenacao, pagina, setPagina } = useConsultaProjetos()
   const filtrosAplicados = useDebounce(filtros, 300)
-  const [ordenacao, setOrdenacao] = useState<SortingState>([])
   const [loteAberto, setLoteAberto] = useState(false)
 
   const consulta = useQuery({
@@ -311,19 +314,33 @@ export function ProjetosListar() {
     [ehAdm],
   )
 
+  // Página persistida pode ter ficado fora do intervalo (dados encolheram
+  // durante a estadia no detalhe): o índice efetivo é derivado em render, sem
+  // escrita corretiva, e o valor persistido volta a valer quando o usuário pagina.
+  const totalPaginas = Math.max(Math.ceil(dados.length / TAMANHO_PAGINA), 1)
+  const paginaEfetiva = Math.min(pagina, totalPaginas - 1)
+
   const tabela = useReactTable({
     data: dados as LinhaProjeto[],
     columns: colunas,
-    state: { sorting: ordenacao },
+    state: { sorting: ordenacao, pagination: { pageIndex: paginaEfetiva, pageSize: TAMANHO_PAGINA } },
     onSortingChange: setOrdenacao,
+    onPaginationChange: (atualizador) => {
+      const proxima =
+        typeof atualizador === "function"
+          ? atualizador({ pageIndex: paginaEfetiva, pageSize: TAMANHO_PAGINA })
+          : atualizador
+      setPagina(proxima.pageIndex)
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: TAMANHO_PAGINA } },
   })
 
   function mudarFiltro<K extends keyof FiltrosProjetos>(campo: K, valor: FiltrosProjetos[K]) {
+    // Mudança de filtro troca o conjunto de dados: voltar à primeira página.
     setFiltros((atual) => ({ ...atual, [campo]: valor }))
+    setPagina(0)
   }
 
   function aoClicarLote() {
@@ -450,7 +467,10 @@ export function ProjetosListar() {
               variant="ghost"
               size="sm"
               className="mt-3"
-              onClick={() => setFiltros(filtrosVazios)}
+              onClick={() => {
+                setFiltros(filtrosVazios)
+                setPagina(0)
+              }}
             >
               <FunnelX className="size-4" aria-hidden />
               Limpar filtros
@@ -516,8 +536,7 @@ export function ProjetosListar() {
             </Table>
             <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground">
               <span>
-                {dados.length} projeto(s) — página {tabela.getState().pagination.pageIndex + 1} de{" "}
-                {tabela.getPageCount() || 1}
+                {dados.length} projeto(s) — página {paginaEfetiva + 1} de {totalPaginas}
               </span>
               <div className="flex gap-1">
                 <Button

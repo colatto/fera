@@ -2,6 +2,7 @@ import { lazy } from "react"
 import { Outlet, redirect, createBrowserRouter, useRouteLoaderData } from "react-router"
 import { Shell } from "@/components/shell"
 import { RotaLazy } from "@/components/rota-lazy"
+import { ProvedorConsultaProjetos } from "@/routes/projetos/contexto-consulta"
 import { SemDados } from "@/components/estados"
 import { exigirSessao, type SessaoAtual } from "@/lib/auth"
 
@@ -72,7 +73,11 @@ export function criarRouter() {
       id: "shell",
       path: "/",
       loader: () => exigirSessao(),
-      element: <Shell />,
+      element: (
+        <ProvedorConsultaProjetos>
+          <Shell />
+        </ProvedorConsultaProjetos>
+      ),
       children: [
         { index: true, loader: () => redirect("/projetos") },
         {
