@@ -153,6 +153,12 @@ begin
     if not public.usuario_adm() then raise exception 'Apenas ADM pode reverter vínculo de OC' using errcode = '42501'; end if;
     update public.projeto set status = p_novo, ordem_compra_id = null, centro_custo = null where id = p_id;
   elsif p_novo = 'ENVIADO' and v.status <> 'CADASTRADO' then raise exception 'Reversão de OC exige projeto em status OC_REGISTRADA';
+  elsif p_novo = 'OC_REGISTRADA' and v.status = 'AUTORIZADO_FATURAMENTO' then
+    if not public.usuario_adm() then raise exception 'Apenas ADM pode reverter autorização de faturamento' using errcode = '42501'; end if;
+    delete from public.autorizacao_faturamento where projeto_id = p_id;
+    update public.projeto set status = p_novo where id = p_id;
+  elsif p_novo = 'OC_REGISTRADA' then
+    raise exception 'Reversão da autorização exige projeto em status AUTORIZADO_FATURAMENTO';
   elsif p_novo = 'CANCELADO' and v.status = 'CADASTRADO' and nullif(btrim(p_motivo),'') is not null then update public.projeto set status=p_novo where id=p_id;
   elsif p_novo = 'CANCELADO' and v.status <> 'CADASTRADO' then raise exception 'Cancelamento exige projeto em status CADASTRADO';
   else raise exception 'Transição manual não autorizada'; end if;

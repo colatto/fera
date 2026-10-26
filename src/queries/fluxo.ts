@@ -92,6 +92,19 @@ export async function retrocederOc(id: number): Promise<void> {
   if (error) throw error
 }
 
+// Reversão da autorização de faturamento (AUTORIZADO_FATURAMENTO → OC_REGISTRADA),
+// exclusiva de ADM: o banco apaga o registro da autorização e muda o status na
+// mesma transição, sem motivo, preservando OC, centro de custo, data_envio e
+// valor; a recusa a partir de qualquer outra origem vem com a mensagem
+// específica do banco (spec fluxo-projetos).
+export async function retrocederAutorizacao(id: number): Promise<void> {
+  const { error } = await supabase.rpc("alterar_status_projeto", {
+    p_id: id,
+    p_novo: "OC_REGISTRADA" satisfies StatusProjeto,
+  })
+  if (error) throw error
+}
+
 export async function registrarOrdemCompra(
   p_numero: string,
   p_data: string,

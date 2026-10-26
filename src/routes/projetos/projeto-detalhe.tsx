@@ -51,6 +51,7 @@ import {
   registrarNotaFiscal,
   registrarOrdemCompra,
   registrarRecebimento,
+  retrocederAutorizacao,
   retrocederOc,
   retornarEnvio,
   vincularOrdemCompra,
@@ -337,6 +338,51 @@ function DialogReverterOc({
           </Button>
           <Button variant="destructive" disabled={mutacao.isPending} onClick={() => void submeter()}>
             Cancelar vínculo de OC
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DialogReverterAutorizacao({
+  aberto,
+  aoFechar,
+  projetoId,
+}: {
+  aberto: boolean
+  aoFechar: () => void
+  projetoId: number
+}) {
+  const mutacao = useAcaoFluxo(() => retrocederAutorizacao(projetoId))
+
+  async function submeter() {
+    try {
+      await mutacao.mutateAsync(undefined)
+      toast.success("Autorização de faturamento cancelada.")
+      aoFechar()
+    } catch (erro) {
+      // Sem mapeamento local: as recusas da reversão da autorização já chegam
+      // com a mensagem específica do banco (design D3).
+      toast.error(mensagemDeErro(erro))
+    }
+  }
+
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancelar autorização de faturamento</DialogTitle>
+          <DialogDescription>
+            O projeto volta ao status OC registrada, mantendo a ordem de compra e o centro de custo. A autorização é apagada e pode ser refeita depois — com novo autor e nova data.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={aoFechar}>
+            Voltar
+          </Button>
+          <Button variant="destructive" disabled={mutacao.isPending} onClick={() => void submeter()}>
+            Cancelar autorização de faturamento
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -882,6 +928,7 @@ export function ProjetoDetalhe() {
   const [cancelando, setCancelando] = useState(false)
   const [revertendo, setRevertendo] = useState(false)
   const [revertendoOc, setRevertendoOc] = useState(false)
+  const [revertendoAutorizacao, setRevertendoAutorizacao] = useState(false)
   const [editando, setEditando] = useState(false)
   const [editandoPasta, setEditandoPasta] = useState(false)
   const [ocAberta, setOcAberta] = useState(false)
@@ -1015,9 +1062,18 @@ export function ProjetoDetalhe() {
               </>
             ) : null}
             {ehAdm && status === "AUTORIZADO_FATURAMENTO" ? (
-              <Button size="sm" variant="secondary" onClick={() => setNotaAberta(true)}>
-                Registrar nota fiscal
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setRevertendoAutorizacao(true)}
+                >
+                  Cancelar autorização de faturamento
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setNotaAberta(true)}>
+                  Registrar nota fiscal
+                </Button>
+              </>
             ) : null}
             {ehAdm && status === "NOTA_EMITIDA" ? (
               <Button size="sm" variant="secondary" onClick={() => setRecebimentoAberto(true)}>
@@ -1191,6 +1247,11 @@ export function ProjetoDetalhe() {
       <DialogReverterOc
         aberto={revertendoOc}
         aoFechar={() => setRevertendoOc(false)}
+        projetoId={id}
+      />
+      <DialogReverterAutorizacao
+        aberto={revertendoAutorizacao}
+        aoFechar={() => setRevertendoAutorizacao(false)}
         projetoId={id}
       />
       {ehAdm ? (
