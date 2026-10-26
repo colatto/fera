@@ -134,8 +134,8 @@ begin
   insert into public.sequencia_projeto(ano, proximo_numero) values (v_ano, 1)
   on conflict (ano) do update set proximo_numero = sequencia_projeto.proximo_numero + 1, atualizado_em = now()
   returning proximo_numero into v_numero;
-  insert into public.projeto(numero, ano, codigo_pasta, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, valor, responsavel_interno_id, criado_por)
-  values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_valor, p_responsavel_id, auth.uid()) returning id into v_id;
+  insert into public.projeto(numero, ano, codigo_pasta, pasta_local, tipo_projeto_id, cliente_id, identificador_cliente, operadora_id, identificador_operadora, cidade, uf, valor, responsavel_interno_id, criado_por)
+  values(v_numero, v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0')), format('P:\_OBRAS_%s\%s', v_ano, format('F-%s-%s', v_ano, lpad(v_numero::text,4,'0'))), p_tipo_id, p_cliente_id, p_identificador_cliente, p_operadora_id, p_identificador_operadora, p_cidade, upper(p_uf), p_valor, p_responsavel_id, auth.uid()) returning id into v_id;
   insert into public.evento_projeto(projeto_id, realizado_por, tipo, detalhes) values(v_id, auth.uid(), 'CRIACAO', jsonb_build_object('origem','cadastro'));
   return v_id;
 end; $$;
