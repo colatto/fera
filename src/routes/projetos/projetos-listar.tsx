@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, FunnelX } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -41,6 +42,7 @@ import {
   filtrosAtivos,
   filtrosVazios,
   listarProjetos,
+  listarResponsaveis,
   type FiltrosProjetos,
   type ProjetoAdministrativo,
   type ProjetoOperacional,
@@ -77,14 +79,16 @@ function FiltroSelect({
   valor,
   aoMudar,
   opcoes,
+  classeLargura,
 }: {
   rotulo: string
   valor: string
   aoMudar: (valor: string) => void
   opcoes: string[]
+  classeLargura?: string
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn("flex flex-col gap-1.5", classeLargura)}>
       <Label className="text-xs">{rotulo}</Label>
       <Select
         value={valor || TODOS}
@@ -111,14 +115,16 @@ function FiltroTexto({
   valor,
   aoMudar,
   tamanhoMaximo,
+  classeLargura,
 }: {
   rotulo: string
   valor: string
   aoMudar: (valor: string) => void
   tamanhoMaximo?: number
+  classeLargura?: string
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn("flex flex-col gap-1.5", classeLargura)}>
       <Label className="text-xs">{rotulo}</Label>
       <Input
         value={valor}
@@ -307,6 +313,10 @@ export function ProjetosListar() {
   const clientes = useQuery({ queryKey: chavesCadastros.clientes(), queryFn: listarClientes })
   const operadoras = useQuery({ queryKey: chavesCadastros.operadoras(), queryFn: listarOperadoras })
   const tipos = useQuery({ queryKey: chavesCadastros.tipos(), queryFn: listarTipos })
+  const responsaveis = useQuery({
+    queryKey: chavesProjetos.responsaveis(usuario.perfil),
+    queryFn: () => listarResponsaveis(usuario.perfil),
+  })
 
   const dados = useMemo(() => consulta.data ?? [], [consulta.data])
   const colunas = useMemo<ColumnDef<LinhaProjeto>[]>(
@@ -388,13 +398,16 @@ export function ProjetosListar() {
 
       <Card>
         <CardContent className="relative">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:grid-cols-9">
+          {/* Em lg o painel vira linha única flex (as classes de grid ficam
+              inertes); em telas menores mantém o grid de 2 colunas / 5 no md. */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5 lg:flex lg:flex-nowrap">
             <FiltroTexto
               rotulo="Código"
               valor={filtros.codigo}
               aoMudar={(v) => mudarFiltro("codigo", v)}
+              classeLargura="lg:w-24"
             />
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 lg:flex-1">
               <Label className="text-xs">Status</Label>
               <Select
                 value={filtros.status || TODOS}
@@ -418,32 +431,49 @@ export function ProjetosListar() {
               valor={filtros.cliente}
               aoMudar={(v) => mudarFiltro("cliente", v)}
               opcoes={(clientes.data ?? []).map((c) => c.nome)}
+              classeLargura="lg:flex-1"
             />
             <FiltroTexto
-              rotulo="ID cliente/oper."
+              rotulo="IDs cli/oper"
               valor={filtros.identificador}
               aoMudar={(v) => mudarFiltro("identificador", v)}
+              classeLargura="lg:flex-1"
             />
             <FiltroSelect
               rotulo="Operadora"
               valor={filtros.operadora}
               aoMudar={(v) => mudarFiltro("operadora", v)}
               opcoes={(operadoras.data ?? []).map((o) => o.nome)}
+              classeLargura="lg:w-28"
+            />
+            <FiltroSelect
+              rotulo="Responsável"
+              valor={filtros.responsavel}
+              aoMudar={(v) => mudarFiltro("responsavel", v)}
+              opcoes={responsaveis.data ?? []}
+              classeLargura="lg:flex-1"
             />
             <FiltroSelect
               rotulo="Tipo"
               valor={filtros.tipo}
               aoMudar={(v) => mudarFiltro("tipo", v)}
               opcoes={(tipos.data ?? []).map((t) => t.nome)}
+              classeLargura="lg:flex-1"
             />
-            <FiltroTexto rotulo="Cidade" valor={filtros.cidade} aoMudar={(v) => mudarFiltro("cidade", v)} />
+            <FiltroTexto
+              rotulo="Cidade"
+              valor={filtros.cidade}
+              aoMudar={(v) => mudarFiltro("cidade", v)}
+              classeLargura="lg:flex-1"
+            />
             <FiltroTexto
               rotulo="UF"
               valor={filtros.uf}
               aoMudar={(v) => mudarFiltro("uf", v.toUpperCase())}
               tamanhoMaximo={2}
+              classeLargura="lg:w-12"
             />
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 lg:w-24">
               <Label className="text-xs">Compatibilizados</Label>
               <Select
                 value={filtros.compatibilizado === "" ? TODOS : String(filtros.compatibilizado)}

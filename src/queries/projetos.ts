@@ -12,12 +12,18 @@ export type OrdemCompraAdm = Tables<"v_ordens_compra_administrativo">
 const vAdministrativo = "v_projetos_administrativo" as const
 const vOperacional = "v_projetos_operacional" as const
 
+// Contas internas da R3 (design, decisão 2): saem somente das opções do filtro
+// de responsável; os projetos sob elas seguem visíveis na listagem com o nome
+// da conta na coluna "Responsável".
+const CONTAS_INTERNAS_OCULTAS = new Set(["Fernanda/R3", "Operacional/R3"])
+
 // Filtros combináveis (spec consulta-projetos): aplicados em conjunto no servidor.
 export interface FiltrosProjetos {
   codigo: string
   cliente: string
   identificador: string
   operadora: string
+  responsavel: string
   cidade: string
   uf: string
   tipo: string
@@ -30,6 +36,7 @@ export const filtrosVazios: FiltrosProjetos = {
   cliente: "",
   identificador: "",
   operadora: "",
+  responsavel: "",
   cidade: "",
   uf: "",
   tipo: "",
@@ -59,6 +66,7 @@ function montarConsulta(perfil: Perfil, filtros: FiltrosProjetos) {
     )
   }
   if (filtros.operadora) q = q.eq("operadora", filtros.operadora)
+  if (filtros.responsavel) q = q.eq("responsavel_interno", filtros.responsavel)
   if (filtros.cidade) q = q.ilike("cidade", `%${filtros.cidade.trim()}%`)
   if (filtros.uf) q = q.eq("uf", filtros.uf.trim().toUpperCase())
   if (filtros.tipo) q = q.eq("tipo_projeto", filtros.tipo)
@@ -81,6 +89,24 @@ export async function listarProjetos(
   const { data, error } = await montarConsulta(perfil, filtros)
   if (error) throw error
   return (data ?? []) as ProjetoAdministrativo[] | ProjetoOperacional[]
+}
+
+// Opções do filtro "Responsável" (spec consulta-projetos): valores em uso de
+// responsavel_interno na projeção do perfil — distintos, sem nulos, em ordem
+// alfabética. A view já resolve o join com usuario, então a RLS que restringe
+// essa tabela não é acionada; responsável inativado com projeto segue nas
+// opções, pois a fonte é a responsabilidade histórica dos projetos.
+export async function listarResponsaveis(perfil: Perfil): Promise<string[]> {
+  const { data, error } = await supabase
+    .from(perfil === "ADM" ? vAdministrativo : vOperacional)
+    .select("responsavel_interno")
+  if (error) throw error
+  const nomes = new Set<string>()
+  for (const linha of data ?? []) {
+    const nome = linha.responsavel_interno
+    if (nome && !CONTAS_INTERNAS_OCULTAS.has(nome)) nomes.add(nome)
+  }
+  return [...nomes].sort((a, b) => a.localeCompare(b, "pt-BR"))
 }
 
 export async function obterProjeto(perfil: "ADM", id: number): Promise<ProjetoAdministrativo | null>
@@ -194,6 +220,7 @@ export async function listarOrdensCompra(): Promise<OrdemCompraAdm[]> {
 export const chavesProjetos = {
   todos: (perfil: Perfil) => ["projetos", perfil] as const,
   lista: (perfil: Perfil, filtros: FiltrosProjetos) => ["projetos", perfil, filtros] as const,
+  responsaveis: (perfil: Perfil) => ["projetos", perfil, "responsaveis"] as const,
   detalhe: (perfil: Perfil, id: number) => ["projeto", perfil, id] as const,
   eventos: (id: number) => ["eventos", id] as const,
   documentos: (id: number) => ["documentos", id] as const,
