@@ -1134,12 +1134,13 @@ export function ProjetoDetalhe() {
                   ) : null}
                   {p.pasta_local && pastaValida(p.pasta_local) ? (
                     <Button asChild variant="outline" size="sm">
-                      {/* location: com dois-pontos é a sintaxe documentada do crumb
-                          do search-ms — com "=" o Explorador abre "Resultados da
-                          Pesquisa" tratando o caminho como termo de busca. */}
+                      {/* Protocolo customizado atendido pelo handler local
+                          (handler-pasta-local/ no repositório): decodifica o
+                          caminho, valida e abre o Explorador em janela de pasta
+                          comum. Sem handler o clique apenas não abre nada. */}
                       <a
                         href={
-                          "search-ms:query=&crumb=location:" + encodeURIComponent(p.pasta_local)
+                          "fera-pasta:abrir?caminho=" + encodeURIComponent(p.pasta_local)
                         }
                         title="Abre o Explorador de Arquivos na pasta neste computador"
                       >
